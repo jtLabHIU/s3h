@@ -1,0 +1,23 @@
+{
+  "name": "s3h",
+  "version": "1.0.0",
+  "description": "jtLab Scratch 3 Helper app",
+  "main": "./src/startup.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jtLabHIU/s3h.git"
+  },
+  "keywords": [],
+  "author": "jtLab, Hokkaido Information University",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jtLabHIU/s3h/issues"
+  },
+  "homepage": "https://github.com/jtLabHIU/s3h#readme",
+  "devDependencies": {
+    "electron": "^6.0.9"
+  }
+}
