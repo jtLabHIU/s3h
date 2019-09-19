@@ -1,4 +1,8 @@
 # How to install Scratch Desktop 3.0 from github
+
+## installing zenbuPortable
+- install [zenbuPortable](https://github.com/jtfuruhata/zenbuHQ) from github
+
 ## installing Node.js onto zenbuPortable
 - deflate Node.js to $Pzenbu/node.js
 - add line 87 into zenbuEnv.sh:
