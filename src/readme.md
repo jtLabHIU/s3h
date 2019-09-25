@@ -5,10 +5,6 @@
 
 ## installing Node.js onto zenbuPortable
 - deflate Node.js to $Pzenbu/node.js
-- add line 87 into zenbuEnv.sh:
-    - `export zenbuPathNode="$Pzenbu/node.js"`
-- mod line 117 of zenbuEnv.sh:    
-    - `export PATH="${zenbuPathPathAdd}${zenbuPathGit}/bin:${zenbuPathNode}:${zenbuPathPathOrigin}"`
 
 ## installing Scratch-GUI
 - (fork from [scratch-gui](https://github.com/LLK/scratch-gui))

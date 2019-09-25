@@ -19,5 +19,8 @@
   "homepage": "https://github.com/jtLabHIU/s3h#readme",
   "devDependencies": {
     "electron": "^6.0.9"
+  },
+  "dependencies": {
+    "sleep-async": "^1.0.5"
   }
 }

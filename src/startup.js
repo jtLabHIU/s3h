@@ -1,4 +1,5 @@
 const {app, BrowserWindow, Menu, Tray} = require('electron');
+const jtTello = require('./jtTello');
 
 let mainWindow = null;
 
@@ -40,4 +41,19 @@ app.on('ready', function() {
   mainWindow.on('hide', () => {
     appIcon.setHighlightMode('never')
   });
+
+  const tello = new jtTello();
+  tello.waitListenerReady();
+  console.log('ListenerReady');
+
+  setTimeout(() => {
+    tello.sendCommand('command');
+    setTimeout(() => {
+      tello.sendCommand('takeoff');
+      setTimeout(() => {
+        tello.sendCommand('land');
+      }, 2000);
+    }, 2000);
+  }, 2000);
+  
 });
