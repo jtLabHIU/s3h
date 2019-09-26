@@ -21,6 +21,8 @@
     "electron": "^6.0.9"
   },
   "dependencies": {
-    "sleep-async": "^1.0.5"
+    "node-wifi": "^2.0.12",
+    "sleep-async": "^1.0.5",
+    "wifi-control": "^2.0.1"
   }
 }

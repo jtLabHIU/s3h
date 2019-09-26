@@ -16,6 +16,7 @@ app.on('ready', function() {
     'min-width': 640,
     'min-hight': 480,
     'accept-first-mouse': true,
+    show: false,
     icon: './asset/icon.png'    
   });
   mainWindow.loadURL('file://' + __dirname + '/index.html');
@@ -36,14 +37,14 @@ app.on('ready', function() {
     mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show()
   });
   mainWindow.on('show', () => {
-    appIcon.setHighlightMode('always')
+    mainWindow.setHighlightMode('always')
   });
   mainWindow.on('hide', () => {
-    appIcon.setHighlightMode('never')
+    mainWindow.setHighlightMode('never')
   });
 
   const tello = new jtTello();
-  tello.waitListenerReady();
+  //tello.waitListenerReady();
   console.log('ListenerReady');
 
   setTimeout(() => {
@@ -52,6 +53,15 @@ app.on('ready', function() {
       tello.sendCommand('takeoff');
       setTimeout(() => {
         tello.sendCommand('land');
+        setTimeout(() => {
+          tello.sendCommand('command');
+          setTimeout(() => {
+            tello.sendCommand('takeoff');
+            setTimeout(() => {
+              tello.sendCommand('land');
+            }, 2000);
+          }, 2000);
+        }, 2000);
       }, 2000);
     }, 2000);
   }, 2000);

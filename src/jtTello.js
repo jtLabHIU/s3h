@@ -1,23 +1,36 @@
 /*******************************
  jtTello.js Ver 0.00.190925a
- oriinal Tello.js script
+ original Tello.js script
  by http://www.ryzerobotics.com 
 ********************************/
 
 const http = require('http');
-const sleep = require('sleep-async')().Promise;
+const sleep = require('jtSleep');
 const dgram = require('dgram');
 
 const JTTELLO_DIRECT_COMMANDS = ['emergency', 'rc', 'command'];
 const JTTELLO_PASS_COMMANDS = ['reset_all'];
 
+const JTTELLO_STATE = {
+    INIT: 0,
+    SOCK_READY: 1,
+    CONNECTED: 2,
+    WAIT_RESPONSE: 3,
+    DISCONNECTED: 4
+};
+
 class jtTello{
-    constructor(telloIP     = "192.168.10.1",
+    constructor(telloSSID   = 'TELLO-D2D555',
+                telloIP     = '192.168.10.1',
                 telloPort   =  8889,
                 portCommand =  8050,
                 portState   =  8890,
                 portStream  = 11111,
                 portComm    =  5963){
+        
+        this._state = JTTELLO_STATE.INIT;
+        
+        this._telloSSID   = telloSSID
         this._telloIP     = telloIP;
         this._telloPort   = telloPort;
         this._portCommand = portCommand;
@@ -33,8 +46,14 @@ class jtTello{
         this._sockStateReady = false;
         this._responseReady = false;
 
+        this._sockCommand = null;
+        this._sockState = null;
+    }
+
+    async init(){
         this._sockCommand = dgram.createSocket('udp4');
-        this._sockCommand.bind(portCommand);
+        this._sockState = dgram.createSocket('udp4');
+
         this._sockCommand.on(
             'message', (msg, info) => this.receiveResponse(msg, info)
         );
@@ -43,11 +62,12 @@ class jtTello{
                 const address = this._sockCommand.address();
                 console.log(`sockCommand is listening at ${address.address}:${address.port}`);
                 this._sockCommandReady = true;
+                if(this.isListenerReady()){
+                    this._state = JTTELLO_STATE.SOCK_READY;
+                }
             }
         );
 
-        this._sockState = dgram.createSocket('udp4');
-        this._sockState.bind(this._portState, '0.0.0.0');
         this._sockState.on(
             'message', (msg, info) => this.receiveState(msg, info)
         );
@@ -56,42 +76,56 @@ class jtTello{
                 const address = this._sockState.address();
                 console.log(`sockState is listening at ${address.address}:${address.port}`);
                 this._sockStateReady = true;
+                if(this.isListenerReady()){
+                    this._state = JTTELLO_STATE.SOCK_READY;
+                }
             }
         );
+
+        this._sockCommand.bind(this._portCommand);
+        this._sockState.bind(this._portState, '0.0.0.0');
+
+
+        wifi.init(
+            {
+                debug: true
+            }
+        );
+
+    }
+
+    getState(){
+        return this._state;
     }
 
     isListenerReady(){
         return this._sockCommandReady && this._sockStateReady;
     }
 
-    waitListenerReady(timeout = 5000, interval = 50){
-        let result = false;
+    receiveResponse(msg, info){
+        console.log('Response: ' + msg.toString());
+        if(msg.toString() === 'ok'){
+			console.log('Received %d bytes from %s:%d\n', msg.length, info.address, info.port);
+			if(this._order.length){
+				this._order = this._order.splice(1);
+			}
+			this.submitNext();
+		}else{ 
+			this._order = [];
+			this._lock = false;
+		}
+    }
 
-        const options = {
-            sleep: timeout,
-            interval: interval
-        };
-
-        sleep.sleepWithCondition(() => {
-            if(this.isListenerReady()){
-                result = true;
-                console.log('resolve:', result);
-                return result;
-            }
-        }, options)
-        .then(() => {
-            console.log('then:', result);
-            return result;
-        });
-
-//        setTimeout(() => {
-//            if(this.isListenerReady()){
-//                result = true;
+    receiveState(msg, info){
+        msg = msg.toString().trim();
+        //console.log(msg);
+//        const fieldList = msg.split(';');
+//        fieldList.forEach(
+//            function(field){
+//                let [key, value] = field.split(':');
+//                this._osdData[key] = value;
 //            }
-//            console.log(result);
-//        }, timeout);
-//        console.log(result);
-//        return result;
+//        )
     }
 
     submitCommand(command){
@@ -131,32 +165,6 @@ class jtTello{
         }
         this._order.push(command);
         !this._lock && this.submitNext();
-    }
-
-    receiveResponse(msg, info){
-        console.log('Response: ' + msg.toString());
-        if(msg.toString() === 'ok'){
-			console.log('Received %d bytes from %s:%d\n', msg.length, info.address, info.port);
-			if(this._order.length){
-				this._order = this._order.splice(1);
-			}
-			this.submitNext();
-		}else{ 
-			this._order = [];
-			this._lock = false;
-		}
-    }
-
-    receiveState(msg, info){
-        msg = msg.toString().trim();
-        //console.log(msg);
-//        const fieldList = msg.split(';');
-//        fieldList.forEach(
-//            function(field){
-//                let [key, value] = field.split(':');
-//                this._osdData[key] = value;
-//            }
-//        )
     }
 }
 
