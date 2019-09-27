@@ -5,8 +5,9 @@
 ********************************/
 
 const http = require('http');
-const sleep = require('jtSleep');
 const dgram = require('dgram');
+const sleep = require('./jtSleep');
+const wifi = require('./jtWiFi');
 
 const JTTELLO_DIRECT_COMMANDS = ['emergency', 'rc', 'command'];
 const JTTELLO_PASS_COMMANDS = ['reset_all'];
@@ -48,6 +49,8 @@ class jtTello{
 
         this._sockCommand = null;
         this._sockState = null;
+
+        this.wifi = new wifi();
     }
 
     async init(){
@@ -85,13 +88,7 @@ class jtTello{
         this._sockCommand.bind(this._portCommand);
         this._sockState.bind(this._portState, '0.0.0.0');
 
-
-        wifi.init(
-            {
-                debug: true
-            }
-        );
-
+        await this.wifi.init();
     }
 
     getState(){

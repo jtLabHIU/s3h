@@ -44,6 +44,7 @@ app.on('ready', function() {
   });
 
   const tello = new jtTello();
+  tello.init();
   //tello.waitListenerReady();
   console.log('ListenerReady');
 
