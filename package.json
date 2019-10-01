@@ -21,8 +21,7 @@
     "electron": "^6.0.9"
   },
   "dependencies": {
-    "node-wifi": "^2.0.12",
-    "sleep-async": "^1.0.5",
+    "@network-utils/arp-lookup": "^1.0.4",
     "wifi-control": "^2.0.1"
   }
 }
