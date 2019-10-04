@@ -1,13 +1,21 @@
-/*******************************
- jtTello.js Ver 0.00.190925a
- original Tello.js script
- by http://www.ryzerobotics.com 
-********************************/
+/**
+ * @file Tello controller via WebSocket
+ *      jtTello.js
+ * @module ./jtTello
+ * @version 0.50.191004a
+ * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
+ * @license MIT (see 'LICENSE' file)
+ * @copyright (C) 2019 jtLab, Hokkaido Information University
+ * 
+ *  original Tello.js script
+ *  by http://www.ryzerobotics.com 
+ */
 
 const http = require('http');
 const dgram = require('dgram');
 const sleep = require('./jtSleep');
 const wifi = require('./jtWiFi');
+const websock = require('./jtWebSocket');
 
 const JTTELLO_DIRECT_COMMANDS = ['emergency', 'rc', 'command'];
 const JTTELLO_PASS_COMMANDS = ['reset_all'];
@@ -45,15 +53,19 @@ class jtTello{
 
         this._sockCommandReady = false;
         this._sockStateReady = false;
-        this._responseReady = false;
+
+        this._response = [];
 
         this._sockCommand = null;
         this._sockState = null;
 
         this.wifi = new wifi();
+        this.commServ = new websock();
     }
 
     async init(){
+        let result = false;
+        this._lock = false;
         this._sockCommand = dgram.createSocket('udp4');
         this._sockState = dgram.createSocket('udp4');
 
@@ -88,29 +100,56 @@ class jtTello{
         this._sockCommand.bind(this._portCommand);
         this._sockState.bind(this._portState, '0.0.0.0');
 
-        await this.wifi.init();
+        await this.commServ.createServer(this._portComm);
+
+        let count;
+        if(count = await this.wifi.init()){
+            console.log('ap:', count);
+        }else{
+            console.log('WiFi down...');
+        }
+        const network = await this.wifi.lookup('TELLO-D2D555');
+        if(network){
+            console.log('connect:', await this.wifi.connect(network));
+            console.log(this.wifi.connectionState.network);
+            result = true;
+        }else{
+            console.log('Tello not found');
+        }
+        return result;
     }
 
-    getState(){
+    get state(){
         return this._state;
+    }
+
+    get response(){
+        return this._response;
+    }
+
+    get responseReady(){
+        return this._response.length;
+    }
+
+    popResponse(){
+        let result = null;
+        let responseWatchdog = null;
+        return new Promise(resolve => {
+            responseWatchdog = setInterval( () => {
+                if(this.responseReady>0){
+                    result = this._response[0];
+                    this._response.shift();
+                    resolve(result);
+                }
+            }, 1);
+        }).then((result) => {
+            clearInterval(responseWatchdog);
+            return result;
+        });
     }
 
     isListenerReady(){
         return this._sockCommandReady && this._sockStateReady;
-    }
-
-    receiveResponse(msg, info){
-        console.log('Response: ' + msg.toString());
-        if(msg.toString() === 'ok'){
-			console.log('Received %d bytes from %s:%d\n', msg.length, info.address, info.port);
-			if(this._order.length){
-				this._order = this._order.splice(1);
-			}
-			this.submitNext();
-		}else{ 
-			this._order = [];
-			this._lock = false;
-		}
     }
 
     receiveState(msg, info){
@@ -125,43 +164,49 @@ class jtTello{
 //        )
     }
 
-    submitCommand(command){
-        const message = Buffer.from(command);
-        console.log('send:', command);
-        this._sockCommand.send(message, 0, message.length,
-            this._telloPort, this._telloIP,
-            function(err){
-                if (err){
-                    console.log('submitCommand: ', err);
-                    throw err;
-                }
+    receiveResponse(msg, info){
+        this._response.push(msg.toString());
+    }
+
+    async sendCommand(command){
+        let result = true;
+        if(!this._lock){
+            if(JTTELLO_PASS_COMMANDS.indexOf(command) >= 0){
+                return;
             }
-        );
-    }
-
-    submitNext(){
-        this._lock = true;
-        if(this._order.length){
-            const command = this._order[0];
-            console.log('submitNext: ', command);
-            this.submitCommand(command);
-        }else{
-            console.log('submitNext: [empty]');
+            const message = Buffer.from(command);
+            console.log('send:', command);
+            this._lock = true;
+            await this._sockCommand.send(message, 0, message.length,
+                this._telloPort, this._telloIP,
+                function(err){
+                    if (err){
+                        console.log('submitCommand error: ', err);
+                        throw err;
+                    }
+                }
+            );
+            console.log('popResponse:', await this.popResponse());
             this._lock = false;
+        }else{
+            result = false;
         }
+        return result;
     }
 
-    sendCommand(command){
-        if(JTTELLO_PASS_COMMANDS.indexOf(command) >= 0){
-            return;
+    async disconnect(){
+        let result = false;
+        try{
+            await this._sockCommand.close();
+            await this._sockState.close();
+            this._sockCommand = null;
+            this._sockState = null;
+            await this.commServ.closeServer();
+            result = await this.wifi.disconnect();
+        }catch(e){
+            result = e;
         }
-        if(JTTELLO_DIRECT_COMMANDS.indexOf(command) >= 0){
-            this.submitCommand(command);
-            this._order = [];
-            return false;
-        }
-        this._order.push(command);
-        !this._lock && this.submitNext();
+        return result;
     }
 }
 

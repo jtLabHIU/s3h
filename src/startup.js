@@ -1,5 +1,7 @@
 const {app, BrowserWindow, Menu, Tray} = require('electron');
 const jtTello = require('./jtTello');
+const sleep = require('./jtSleep');
+const jtWebSocket = require('./jtWebSocket');
 
 let mainWindow = null;
 
@@ -30,41 +32,39 @@ app.on('ready', function() {
   var contextMenu = Menu.buildFromTemplate([
       { label: 'Restore', type: 'radio' }
   ]);
-  appIcon.setToolTip('Electron.js App');
+  appIcon.setToolTip('jtS3Helper');
   appIcon.setContextMenu(contextMenu);
 
   appIcon.on('click', () => {
     mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show()
   });
   mainWindow.on('show', () => {
-    mainWindow.setHighlightMode('always')
+    //mainWindow.setHighlightMode('always')
+    flyTello();
   });
   mainWindow.on('hide', () => {
-    mainWindow.setHighlightMode('never')
+    //mainWindow.setHighlightMode('never')
   });
 
-  const tello = new jtTello();
-  tello.init();
-  //tello.waitListenerReady();
-  console.log('ListenerReady');
-
-  setTimeout(() => {
-    tello.sendCommand('command');
-    setTimeout(() => {
-      tello.sendCommand('takeoff');
-      setTimeout(() => {
-        tello.sendCommand('land');
-        setTimeout(() => {
-          tello.sendCommand('command');
-          setTimeout(() => {
-            tello.sendCommand('takeoff');
-            setTimeout(() => {
-              tello.sendCommand('land');
-            }, 2000);
-          }, 2000);
-        }, 2000);
-      }, 2000);
-    }, 2000);
-  }, 2000);
-  
 });
+
+
+
+async function flyTello(){
+  const tello = new jtTello();
+  //const client = new jtWebSocket();
+  
+  if(await tello.init()){
+    //await client.createClient('localhost', 5963);
+    //console.log(client._client);
+    //await client.request('Hi from startup');
+    await tello.sendCommand('command');
+    await tello.sendCommand('takeoff');
+    await tello.sendCommand('flip f');
+    await tello.sendCommand('land');
+  }else{
+    console.log('can not send commands');
+  }
+  await tello.disconnect();
+  return
+}

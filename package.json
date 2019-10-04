@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@network-utils/arp-lookup": "^1.0.4",
-    "wifi-control": "^2.0.1"
+    "wifi-control": "^2.0.1",
+    "ws": "^7.1.2"
   }
 }

@@ -8,7 +8,11 @@ jtLab Scratch 3 Helper app
 - `git clone https://github.com/jtLabHIU/s3h.git`
 - `cd s3h`
 - `npm install`
+- modify `/node_modules/wifi-control/lib/win32.js` (see below)
 - `electron .`
+
+## modify wifi-control module
+- add `chcp 437 & ` into before `netsh` of line 69 & 163
 
 ## further information
 - [wifi-control](https://www.npmjs.com/package/wifi-control)
