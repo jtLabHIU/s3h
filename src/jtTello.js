@@ -15,7 +15,7 @@ const http = require('http');
 const dgram = require('dgram');
 const sleep = require('./jtSleep');
 const wifi = require('./jtWiFi');
-const websock = require('./jtWebSocket');
+const ws = require('ws');
 
 const JTTELLO_DIRECT_COMMANDS = ['emergency', 'rc', 'command'];
 const JTTELLO_PASS_COMMANDS = ['reset_all'];
@@ -29,7 +29,7 @@ const JTTELLO_STATE = {
 };
 
 class jtTello{
-    constructor(telloSSID   = 'TELLO-D2D555',
+    constructor(telloID     = 'D2D555',
                 telloIP     = '192.168.10.1',
                 telloPort   =  8889,
                 portCommand =  8050,
@@ -39,7 +39,8 @@ class jtTello{
         
         this._state = JTTELLO_STATE.INIT;
         
-        this._telloSSID   = telloSSID
+        this._telloID     = telloID;
+        this._telloSSID   = 'TELLO-' + telloID;
         this._telloIP     = telloIP;
         this._telloPort   = telloPort;
         this._portCommand = portCommand;
@@ -60,12 +61,23 @@ class jtTello{
         this._sockState = null;
 
         this.wifi = new wifi();
-        this.commServ = new websock();
+        this.commServ = null;
+    }
+
+    get state(){
+        return this._state;
+    }
+
+    get response(){
+        return this._response;
+    }
+
+    get responseReady(){
+        return this._response.length;
     }
 
     async init(){
-        let result = false;
-        this._lock = false;
+        let count;
         this._sockCommand = dgram.createSocket('udp4');
         this._sockState = dgram.createSocket('udp4');
 
@@ -75,7 +87,7 @@ class jtTello{
         this._sockCommand.on(
             'listening', () => {
                 const address = this._sockCommand.address();
-                console.log(`sockCommand is listening at ${address.address}:${address.port}`);
+                this.log(`sockCommand is listening at ${address.address}:${address.port}`);
                 this._sockCommandReady = true;
                 if(this.isListenerReady()){
                     this._state = JTTELLO_STATE.SOCK_READY;
@@ -89,7 +101,7 @@ class jtTello{
         this._sockState.on(
             'listening', () => {
                 const address = this._sockState.address();
-                console.log(`sockState is listening at ${address.address}:${address.port}`);
+                this.log(`sockState is listening at ${address.address}:${address.port}`);
                 this._sockStateReady = true;
                 if(this.isListenerReady()){
                     this._state = JTTELLO_STATE.SOCK_READY;
@@ -100,35 +112,80 @@ class jtTello{
         this._sockCommand.bind(this._portCommand);
         this._sockState.bind(this._portState, '0.0.0.0');
 
-        await this.commServ.createServer(this._portComm);
-
-        let count;
-        if(count = await this.wifi.init()){
-            console.log('ap:', count);
-        }else{
-            console.log('WiFi down...');
+        try{
+            this.commServ = new ws.Server({port:this._portComm});
+            this.commServ.on('connection', (sock) => {
+                sock.on('message', (message) => {
+                    this._onServerGetMessage(message);
+                });
+                sock.on('close', () => {
+                    this._onServerConnectionClose();
+                });
+            });
+            this.log('commServ is listening at WebSocket', this._portComm);
+        }catch(e){
+            this.log('create commServ failed at WebSocket', this._portComm);
+            this.log(e);
         }
-        const network = await this.wifi.lookup('TELLO-D2D555');
+
+        if(count = await this.wifi.init(false)){
+            this.log('WiFi found ' + count + 'APs');
+        }else{
+            this.log('WiFi down...');
+        }
+        return;
+    }
+
+    async connect(id = this._telloID){
+        let result = false;
+        this._telloID = id;
+        this._telloSSID = 'TELLO-' + id;
+        const network = await this.wifi.lookup(this._telloSSID);
         if(network){
-            console.log('connect:', await this.wifi.connect(network));
-            console.log(this.wifi.connectionState.network);
+            this.log((await this.wifi.connect(network)).msg);
+            this._telloIP = this.wifi.connectionState.network.ip
+            this.log('IP:', this._telloIP);
+            this.commServ.on('connection', (sock) => {
+                sock.on('message', (message) => {
+                    this._onServerGetMessage(message, this);
+                });
+                sock.on('close', () => {
+                    this._onServerConnectionClose();
+                });
+            });
+            this._lock = false;
+            await this.sendCommand('command');
+            await this.sendCommand('command');
             result = true;
         }else{
-            console.log('Tello not found');
+            this.log('Tello not found');
         }
         return result;
     }
 
-    get state(){
-        return this._state;
-    }
+    async _onServerGetMessage(message, caller){
+        let result = false;
+        console.log('commServ get msg:', message);
+        if(message.indexOf('connect') === 0){
+            const id = message.substr(8).trim();
+            if(id){
+                result = await this.connect(id);
+            }else{
+                result = await this.connect();
+            }
+        }else if(message.indexOf('disconnect') === 0){
+            result = this.disconnect();
+        }else{
+            if(caller){
+                console.log(caller);
+                result = await caller.sendCommand(message);
+            }
+        }
+        return result;
+    };
 
-    get response(){
-        return this._response;
-    }
-
-    get responseReady(){
-        return this._response.length;
+    async _onServerConnectionClose(){
+        return await this.disconnect();
     }
 
     popResponse(){
@@ -169,27 +226,29 @@ class jtTello{
     }
 
     async sendCommand(command){
-        let result = true;
+        let result = false;
         if(!this._lock){
             if(JTTELLO_PASS_COMMANDS.indexOf(command) >= 0){
                 return;
             }
             const message = Buffer.from(command);
-            console.log('send:', command);
+            this.log('send:', command);
             this._lock = true;
-            await this._sockCommand.send(message, 0, message.length,
-                this._telloPort, this._telloIP,
-                function(err){
-                    if (err){
-                        console.log('submitCommand error: ', err);
-                        throw err;
+            try{
+                await this._sockCommand.send(message, 0, message.length,
+                    this._telloPort, this._telloIP,
+                    function(err){
+                        if(err){
+                            throw err;
+                        }
                     }
-                }
-            );
-            console.log('popResponse:', await this.popResponse());
+                );
+                result = await this.popResponse();
+                this.log('recv:', result);
+            }catch(e){
+                this.log('submitCommand error: ', e);
+            }
             this._lock = false;
-        }else{
-            result = false;
         }
         return result;
     }
@@ -201,12 +260,23 @@ class jtTello{
             await this._sockState.close();
             this._sockCommand = null;
             this._sockState = null;
-            await this.commServ.closeServer();
             result = await this.wifi.disconnect();
         }catch(e){
             result = e;
         }
         return result;
+    }
+
+    async destruct(){
+        return await this.commServ.close();
+    }
+
+    log(msg, ...msgs){
+        if(msgs.length){
+            console.log(msg, msgs[0]);
+        }else{
+            console.log(msg);
+        }
     }
 }
 

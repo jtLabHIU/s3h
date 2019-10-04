@@ -137,7 +137,7 @@ class jtWiFi{
      * @return {number} - number of APs
      */
     async init(debug = true){
-        this.debug = debug;
+        this._debug = debug;
         wifi.init({
             debug: this._debug
         });
@@ -299,6 +299,9 @@ class jtWiFi{
         return result;
     }
 
+    /**
+     * disconnect from current AP and recall network watchdog
+     */
     async disconnect(){
         let result = false;
         try{

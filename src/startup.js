@@ -40,11 +40,11 @@ app.on('ready', function() {
   });
   mainWindow.on('show', () => {
     //mainWindow.setHighlightMode('always')
-    flyTello();
   });
   mainWindow.on('hide', () => {
     //mainWindow.setHighlightMode('never')
   });
+  flyTello();
 
 });
 
@@ -52,19 +52,24 @@ app.on('ready', function() {
 
 async function flyTello(){
   const tello = new jtTello();
-  //const client = new jtWebSocket();
+  const client = new jtWebSocket();
   
-  if(await tello.init()){
-    //await client.createClient('localhost', 5963);
+  await tello.init();
+  if(await tello.connect('D2D555')){
+    console.log(await client.createClient('localhost', 5963));
+    await sleep(1000);
     //console.log(client._client);
-    //await client.request('Hi from startup');
-    await tello.sendCommand('command');
-    await tello.sendCommand('takeoff');
-    await tello.sendCommand('flip f');
-    await tello.sendCommand('land');
+    await client.request('takeoff');
+    await client.request('flip f');
+    await client.request('land');
+    //await tello.sendCommand('command');
+    //await tello.sendCommand('takeoff');
+    //await tello.sendCommand('flip f');
+    //await tello.sendCommand('land');
   }else{
     console.log('can not send commands');
   }
-  await tello.disconnect();
+  //await tello.disconnect();
+  //await tello.destruct();
   return
 }

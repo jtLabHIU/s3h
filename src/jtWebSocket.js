@@ -34,9 +34,6 @@ class jtWebSocket{
                     onConnectionClose();
                 });
             });
-            this._server.on('close', () => {
-                //console.log('server close invoked');
-            });
         }catch(e){
             result = e;
         }
