@@ -5,6 +5,7 @@ jtLab Scratch 3 Helper app
 - communicate with Scratch 3 through WebSocket
 
 ## How to run
+- `npm -g install electron`
 - `git clone https://github.com/jtLabHIU/s3h.git`
 - `cd s3h`
 - `npm install`

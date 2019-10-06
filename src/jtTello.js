@@ -60,8 +60,10 @@ class jtTello{
         this._sockCommand = null;
         this._sockState = null;
 
-        this.wifi = new wifi();
-        this.commServ = null;
+        this._wifi = new wifi();
+        this._commServ = null;
+        this._cmdServ = null;
+        this._commID = 0;
     }
 
     get state(){
@@ -78,6 +80,8 @@ class jtTello{
 
     async init(){
         let count;
+
+        // init socket with Tello
         this._sockCommand = dgram.createSocket('udp4');
         this._sockState = dgram.createSocket('udp4');
 
@@ -112,14 +116,15 @@ class jtTello{
         this._sockCommand.bind(this._portCommand);
         this._sockState.bind(this._portState, '0.0.0.0');
 
+        // init WebSocket server with client
         try{
-            this.commServ = new ws.Server({port:this._portComm});
-            this.commServ.on('connection', (sock) => {
+            this._commServ = new ws.Server({port:this._portComm});
+            this._commServ.on('connection', (sock) => {
                 sock.on('message', (message) => {
-                    this._onServerGetMessage(message);
+                    this._onCommServGetMessage(message);
                 });
                 sock.on('close', () => {
-                    this._onServerConnectionClose();
+                    this._onCommServConnectionClose();
                 });
             });
             this.log('commServ is listening at WebSocket', this._portComm);
@@ -128,7 +133,8 @@ class jtTello{
             this.log(e);
         }
 
-        if(count = await this.wifi.init(false)){
+        // init WiFi
+        if(count = await this._wifi.init(false)){
             this.log('WiFi found ' + count + 'APs');
         }else{
             this.log('WiFi down...');
@@ -140,17 +146,17 @@ class jtTello{
         let result = false;
         this._telloID = id;
         this._telloSSID = 'TELLO-' + id;
-        const network = await this.wifi.lookup(this._telloSSID);
+        const network = await this._wifi.lookup(this._telloSSID);
         if(network){
-            this.log((await this.wifi.connect(network)).msg);
-            this._telloIP = this.wifi.connectionState.network.ip
+            this.log((await this._wifi.connect(network)).msg);
+            this._telloIP = this._wifi.connectionState.network.ip
             this.log('IP:', this._telloIP);
-            this.commServ.on('connection', (sock) => {
+            this._commServ.on('connection', (sock) => {
                 sock.on('message', (message) => {
-                    this._onServerGetMessage(message, this);
+                    this._onCommServGetMessage(message, this);
                 });
                 sock.on('close', () => {
-                    this._onServerConnectionClose();
+                    this._onCommServConnectionClose();
                 });
             });
             this._lock = false;
@@ -163,7 +169,7 @@ class jtTello{
         return result;
     }
 
-    async _onServerGetMessage(message, caller){
+    async _onCommServGetMessage(message){
         let result = false;
         console.log('commServ get msg:', message);
         if(message.indexOf('connect') === 0){
@@ -176,15 +182,12 @@ class jtTello{
         }else if(message.indexOf('disconnect') === 0){
             result = this.disconnect();
         }else{
-            if(caller){
-                console.log(caller);
-                result = await caller.sendCommand(message);
-            }
+            result = await caller.sendCommand(message);
         }
         return result;
     };
 
-    async _onServerConnectionClose(){
+    async _onCommServConnectionClose(){
         return await this.disconnect();
     }
 
@@ -260,7 +263,7 @@ class jtTello{
             await this._sockState.close();
             this._sockCommand = null;
             this._sockState = null;
-            result = await this.wifi.disconnect();
+            result = await this._wifi.disconnect();
         }catch(e){
             result = e;
         }
@@ -268,7 +271,7 @@ class jtTello{
     }
 
     async destruct(){
-        return await this.commServ.close();
+        return await this._commServ.close();
     }
 
     log(msg, ...msgs){

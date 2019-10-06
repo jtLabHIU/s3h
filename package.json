@@ -17,11 +17,10 @@
     "url": "https://github.com/jtLabHIU/s3h/issues"
   },
   "homepage": "https://github.com/jtLabHIU/s3h#readme",
-  "devDependencies": {
-    "electron": "^6.0.9"
-  },
+  "devDependencies": {},
   "dependencies": {
     "@network-utils/arp-lookup": "^1.0.4",
+    "electron": "^6.0.11",
     "wifi-control": "^2.0.1",
     "ws": "^7.1.2"
   }
