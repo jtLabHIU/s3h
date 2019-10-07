@@ -64,17 +64,16 @@ class jtWebSockClient{
             watchdog = setInterval( () => {
                 if(this._sock.readyState == ws.OPEN){
                     this.log('waitReadyState: ready', timer);
-                    clearInterval(watchdog);
                     resolve(true);
                 }
                 timer = timer - interval;
                 if(timer<0){
                     this.log('waitReadyState: timeout');
-                    clearInterval(watchdog);
                     resolve(false);
                 }
             }, interval);
         }).then( (result) => {
+            clearInterval(watchdog);
             this.log('watchdog result =', result);
             return result;
         });

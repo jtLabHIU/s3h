@@ -66,7 +66,7 @@ class jtWebSockRepeater{
 
         // init WiFi
         if(count = await this._wifi.init(false)){
-            this.log('WiFi found ' + count + 'APs');
+            this.log('WiFi found ' + count + ' APs');
         }else{
             this.log('WiFi down...');
         }

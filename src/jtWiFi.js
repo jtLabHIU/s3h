@@ -121,7 +121,7 @@ class jtWiFi{
     /**
      * WiFi network object
      * @readonly
-     * @return {APList} - aplist
+     * @returns {APList} - aplist
      */
     get aplist(){
         return this._aplist;
@@ -134,7 +134,7 @@ class jtWiFi{
     /**
      * initialize WiFi connector and scan APs
      * @param {boolean} debug - debug mode
-     * @return {number} - number of APs
+     * @returns {number} - number of APs
      */
     async init(debug = true){
         this._debug = debug;
@@ -196,7 +196,7 @@ class jtWiFi{
 
     /**
      * scan APs
-     * @return {number} - number of APs
+     * @returns {number} - number of APs
      */
     async scan(){
         let result = 0;
@@ -224,7 +224,7 @@ class jtWiFi{
     /**
      * get Network object from SSID or MAC address
      * @param {string} ssidOrMac - SSID or MAC address
-     * @return {Network|boolean} - the Network object if found
+     * @returns {Network|boolean} - the Network object if found
      */
     async lookup(ssidOrMac){
         let result = false;
@@ -244,7 +244,7 @@ class jtWiFi{
 
     /**
      * refresh to current connection status
-     * @return {boolean} - one of state were changed
+     * @returns {boolean} - one of state were changed
      */
     async refreshIfaceState(){
         let result = false;
