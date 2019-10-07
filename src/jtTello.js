@@ -17,7 +17,7 @@ const sleep = require('./jtSleep');
 const wifi = require('./jtWiFi');
 const ws = require('ws');
 
-const JTTELLO_DIRECT_COMMANDS = ['emergency', 'rc', 'command'];
+const JTTELLO_DIRECT_COMMANDS = ['emergency', 'rc'];
 const JTTELLO_PASS_COMMANDS = ['reset_all'];
 
 const JTTELLO_STATE = {

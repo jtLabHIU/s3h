@@ -1,4 +1,5 @@
-const sleep = require('./jtSleep');
+const WSR = require('./jtWebSockRepeater');
+const WSC = require('./jtWebSockClient');
 
 async function testFunc(){
     let resultPromise;
@@ -16,4 +17,13 @@ async function testFunc(){
     });
 }
 
-testFunc();
+async function test(){
+    let result = null;
+    let repeater = new WSR({portComm:5963});
+    await repeater.init();
+    let client = new WSC({portComm:5963});
+    await client.init();
+    await client.request('1:module:connect');
+}
+
+test();

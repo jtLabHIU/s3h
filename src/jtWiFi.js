@@ -317,7 +317,7 @@ class jtWiFi{
     }
 }
 
-
+/*
 async function test(){
     jtwifi = new jtWiFi();
     let count;
@@ -342,6 +342,6 @@ async function test(){
 }
 
 test();
-
+*/
 
 module.exports = jtWiFi;
