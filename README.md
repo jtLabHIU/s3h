@@ -74,3 +74,8 @@ Approximate round trip times in milli-seconds:
 send: ap ETROBO etrobocon_hkd
 Response: OK,drone will reboot in 3s
 Received 26 bytes from 192.168.10.1:8889
+
+limit 1 hop
+scratch 1/2 helper compatible
+
+13:30~14:20 last 10 min
