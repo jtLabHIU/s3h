@@ -20,10 +20,6 @@ jtLab Scratch 3 Helper app
 - [Tello SDK 2.0](https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf)
 - [Tello binary command(Japanese)](https://qiita.com/mozzio369/items/a942a212c6b5d3fdeb48)
 
-## ToDo to release 2
-- add watchdog lib into jtSleep
-- concider changing to node-wifi module from wifi-control
-
 ## my Memo
 - chcp
     - 932 - Japanese Shift-JIS

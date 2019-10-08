@@ -2,7 +2,7 @@
  * @file synchronized WiFi manager
  *      jtWiFi.js
  * @module ./jtWiFi
- * @version 1.11.191004b
+ * @version 1.10.191004a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -18,6 +18,7 @@
 const wifi  = require('wifi-control');
 const arp = require('@network-utils/arp-lookup');
 const sleep = require('./jtSleep');
+const websock = require('./jtWebSocket');
 
 /**
  * - Network:
@@ -317,7 +318,6 @@ class jtWiFi{
     }
 }
 
-/*
 async function test(){
     jtwifi = new jtWiFi();
     let count;
@@ -339,9 +339,22 @@ async function test(){
         await sleep(1000);
     }
     jtwifi.disconnect();
+    const server = new websock();
+    const client = new websock();
+    await server.createServer(undefined, testServer);
+    await client.createClient();
+    await sleep(1000);
+    await client.request('Hi from client!');
+    await sleep(1000);
+    await client.closeClient();
+    await sleep(1000);
+    await server.closeServer();
 }
 
-test();
-*/
+function testServer(message){
+    console.log('test:', message);
+}
+
+//test();
 
 module.exports = jtWiFi;

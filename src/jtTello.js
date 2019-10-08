@@ -283,23 +283,4 @@ class jtTello{
     }
 }
 
-
-//  const server = new websock();
-//  const client = new websock();
-//  await server.createServer(undefined, testServer);
-//  await client.createClient();
-//  await sleep(1000);
-//  await client.request('Hi from client!');
-//  await sleep(1000);
-//  await client.closeClient();
-//  await sleep(1000);
-//  await server.closeServer();
-
-//function testServer(message){
-//  console.log('test:', message);
-//}
-
-
-
-
 module.exports = jtTello;
