@@ -2,23 +2,15 @@
  * @file synchronized WiFi manager
  *      jtWiFi.js
  * @module ./jtWiFi
- * @version 1.10.191004a
+ * @version 0.20.190930a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
- * 
- * ** IMPORTANT WARNING **
- * for Non-English Windows environment users:
- * `wifi-control` module isn't work well on non-english codepage.
- * please add `chcp 437 & ` into before `netsh`
- * of `node-modules/wifi-control/lib/win32.js` line 69 & 163
- * 
  */
 
 const wifi  = require('wifi-control');
 const arp = require('@network-utils/arp-lookup');
 const sleep = require('./jtSleep');
-const websock = require('./jtWebSocket');
 
 /**
  * - Network:
@@ -168,10 +160,8 @@ class jtWiFi{
         return new Promise( (resolve, reject) => {
             return wifi.connectToAP(ap, (err, response) => {
                 if(err){
-                    if(err.indexOf('confirmation timed out')<0){
-                        reject(err);
-                        return;
-                    }
+                    reject(err);
+                    return;
                 }
                 resolve(response);
             });
@@ -185,10 +175,8 @@ class jtWiFi{
         return new Promise( (resolve, reject) => {
             return wifi.resetWiFi((err, response) => {
                 if(err){
-                    if(err.indexOf('confirmation timed out')<0){
-                        reject(err);
-                        return;
-                    }
+                    reject(err);
+                    return;
                 }
                 resolve(response);
             });
@@ -339,22 +327,8 @@ async function test(){
         await sleep(1000);
     }
     jtwifi.disconnect();
-    const server = new websock();
-    const client = new websock();
-    await server.createServer(undefined, testServer);
-    await client.createClient();
-    await sleep(1000);
-    await client.request('Hi from client!');
-    await sleep(1000);
-    await client.closeClient();
-    await sleep(1000);
-    await server.closeServer();
 }
 
-function testServer(message){
-    console.log('test:', message);
-}
-
-//test();
+test();
 
 module.exports = jtWiFi;
