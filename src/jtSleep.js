@@ -38,13 +38,13 @@ async function jtWait(
     let watchdog = null;
     return new Promise( (resolve) => {
         watchdog = setInterval( () => {
-            const condition = await funcCondition();
+            const condition = funcCondition();
             if(condition){
                 resolve(true);
             }
             timer = timer - interval;
             if(timer<0){
-                await funcOnTimeout();
+                funcOnTimeout();
                 resolve(false);
             }
         }, interval);

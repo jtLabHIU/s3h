@@ -314,7 +314,7 @@ async function test(){
     }else{
         console.log('WiFi down...');
     }
-    const network = await jtwifi.lookup('TELLO-D2D555');
+    const network = await jtwifi.lookup('TELLO-FCA4FF');
     if(network){
         console.log('connect:', await jtwifi.connect(network));
         console.log(jtwifi.connectionState.network);
@@ -324,11 +324,11 @@ async function test(){
 
     while(jtwifi.connectionState.connected){
         console.log('running...');
-        await sleep(1000);
+        await sleep(10000);
     }
     jtwifi.disconnect();
 }
 
-test();
+//test();
 
 module.exports = jtWiFi;

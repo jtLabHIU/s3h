@@ -17,6 +17,10 @@ jtLab Scratch 3 Helper app
 - [Tello binary command(Japanese)](https://qiita.com/mozzio369/items/a942a212c6b5d3fdeb48)
 
 ## my Memo
+- Tello vs Tello Edu
+    - sdk?
+        - unknown command: sdk? / 20
+
 - chcp
     - 932 - Japanese Shift-JIS
     - 437 - English
@@ -66,3 +70,7 @@ Approximate round trip times in milli-seconds:
     パケット数: 送信 = 1、受信 = 0、損失 = 1 (100% の損失)、
 ```
 
+- ap command
+send: ap ETROBO etrobocon_hkd
+Response: OK,drone will reboot in 3s
+Received 26 bytes from 192.168.10.1:8889
