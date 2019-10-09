@@ -2,7 +2,7 @@
  * @file synchronous sleep and wait function
  *      jtSleep.js
  * @module ./jtSleep
- * @version 2.00.191007a
+ * @version 2.00.191009a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -31,20 +31,20 @@ function jtSleep(ms){
 async function jtWait(
     timeout = 5000,
     interval = 10,
-    funcCondition = true,
-    funcOnTimeout = {}
+    funcCondition = async function(){return true;},
+    funcOnTimeout = async function(){return}
 ){
     let timer = timeout;
     let watchdog = null;
     return new Promise( (resolve) => {
-        watchdog = setInterval( () => {
+        watchdog = setInterval( async function(){
             const condition = await funcCondition();
             if(condition){
                 resolve(true);
             }
             timer = timer - interval;
             if(timer<0){
-                await funcOnTimeout();
+                const dummy = await funcOnTimeout();
                 resolve(false);
             }
         }, interval);
@@ -52,6 +52,24 @@ async function jtWait(
         clearInterval(watchdog);
         return result;
     });
+}
+
+//usage: jtWait
+var cond = false;
+async function jtWaitSample(){
+    flipper();
+    console.log('await begin');
+    await jtWait(5000, 10, async function(){
+        return cond;
+    });
+    console.log('await end');
+}
+async function flipper(){
+    cond = false;
+    console.log('condition false');
+    await jtSleep(3000);
+    cond = true;
+    console.log('condition true');
 }
 
 //usage: a sample in async function
@@ -77,8 +95,27 @@ function jtSleepWithPromiseSample(){
     });
 }
 
+//usage: jtWait
+var cond = false;
+async function jtWaitSample(){
+    flipper();
+    console.log('await begin');
+    await jtWait(5000, 10, async function(){
+        return cond;
+    });
+    console.log('await end');
+}
+async function flipper(){
+    cond = false;
+    console.log('condition false');
+    await jtSleep(3000);
+    cond = true;
+    console.log('condition true');
+}
+
 //jtSleepInAsyncFunctionSample();
 //jtSleepWithPromiseSample();
+//jtWaitSample();
 
 module.exports = jtSleep;
 module.exports.wait = jtWait;
