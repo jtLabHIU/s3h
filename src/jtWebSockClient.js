@@ -9,7 +9,6 @@
  */
 
 const ws = require('ws');
-const WSR = require('./jtWebSockRepeater');
 const sleep = require('./jtSleep');
 
 class jtWebSockClient{
@@ -26,57 +25,75 @@ class jtWebSockClient{
 
         this._commID = 0;
         this._sock = null;
+
+        this._responseBuffer = [];
     }
 
     async init(){
-        this._sock = new ws('ws://' + this._hostComm + ":" + this._portComm);
-        this._sock.on('open', () => {
-            this._sock.on('message', (message) => {
-                this.log(message);
+        let result = null;
+        try{
+            this._sock = new ws('ws://' + this._hostComm + ":" + this._portComm);
+            this._sock.on('open', () => {
+                this._sock.on('message', (message) => {
+                    this._responseQue.push(message);
+                });
+                this._sock.on('close', () => {
+                    this.log('client close');
+                });
+                this._sock.on('error', (e) => {
+                    this.log('client error:', e);
+                });
             });
-            this._sock.on('close', () => {
-                this.log('client close');
+            result = await sleep.wait(5000, 10, async () => {
+                return (this._sock.readyState === ws.OPEN);
             });
-            this._sock.on('error', (e) => {
-                this.log('client error:', e);
-            });
-        });
-    }
-
-    async request(message){
-        const wait = await this.waitReadyState();
-        this.log('await:', wait);
-        if(!wait){
-            this.log("waitReadyState timeout");
-        }else{
-            this.log("waitReadyState:done");
-            this.log(this._sock.readyState);
-            this.log('sending: message');
-            return await this._sock.send(message);
+        }catch(e){
+            this.log('WSC.init: catch exeption:', e);
+            result = false;
         }
+        return result;
     }
 
-    async waitReadyState(timeout = 5000){
-        const interval = 10;
-        let timer = timeout;
-        let watchdog = null;
-        return new Promise( (resolve) => {
-            watchdog = setInterval( () => {
-                if(this._sock.readyState == ws.OPEN){
-                    this.log('waitReadyState: ready', timer);
-                    resolve(true);
-                }
-                timer = timer - interval;
-                if(timer<0){
-                    this.log('waitReadyState: timeout');
-                    resolve(false);
-                }
-            }, interval);
-        }).then( (result) => {
-            clearInterval(watchdog);
-            this.log('watchdog result =', result);
-            return result;
-        });
+    get responseBuffer(){
+        return this._responseBuffer;
+    }
+
+    async getResponse(commID){
+        let result = null;
+        if(this._responseBuffer.length){
+            const resultSet = this._responseBuffer.filter(
+                value => (value.commID === commID) 
+            );
+            if(resultSet.length){
+                result = resultSet[0];
+            }
+        }
+        return result;
+    }
+
+    async clearResponseBuffer(){
+        this._responseBuffer = [];
+        return;
+    }
+
+    async request(message = 'command', type = 'sync', timeout = 10000){
+        let result = null;
+        let response = null;
+        const commID = (++this._commID);
+        const req =  commID + ':' + type + ':' + message;
+        try{
+            await this._sock.send(req);
+            if( await sleep.wait(timeout, 1, async () => {
+                    return (response = await this.getResponse(commID)) !== null; 
+                })
+            ){
+                this.log(response);
+                result = response;
+            }
+        }catch(e){
+            this.log('WSC request() send:', e);
+        }
+        return result;
     }
 
     log(msg, ...msgs){

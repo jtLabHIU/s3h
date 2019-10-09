@@ -20,14 +20,6 @@ const ws = require('ws');
 const JTTELLO_DIRECT_COMMANDS = ['emergency', 'rc'];
 const JTTELLO_PASS_COMMANDS = ['reset_all'];
 
-const JTTELLO_STATE = {
-    INIT: 0,
-    SOCK_READY: 1,
-    CONNECTED: 2,
-    WAIT_RESPONSE: 3,
-    DISCONNECTED: 4
-};
-
 class jtTello{
     constructor(telloID     = 'D2D555',
                 telloIP     = '192.168.10.1',
@@ -36,8 +28,6 @@ class jtTello{
                 portState   =  8890,
                 portStream  = 11111,
                 portComm    =  5963){
-        
-        this._state = JTTELLO_STATE.INIT;
         
         this._telloID     = telloID;
         this._telloSSID   = 'TELLO-' + telloID;
@@ -66,10 +56,6 @@ class jtTello{
         this._commID = 0;
     }
 
-    get state(){
-        return this._state;
-    }
-
     get response(){
         return this._response;
     }
@@ -93,9 +79,6 @@ class jtTello{
                 const address = this._sockCommand.address();
                 this.log(`sockCommand is listening at ${address.address}:${address.port}`);
                 this._sockCommandReady = true;
-                if(this.isListenerReady()){
-                    this._state = JTTELLO_STATE.SOCK_READY;
-                }
             }
         );
 
@@ -107,14 +90,15 @@ class jtTello{
                 const address = this._sockState.address();
                 this.log(`sockState is listening at ${address.address}:${address.port}`);
                 this._sockStateReady = true;
-                if(this.isListenerReady()){
-                    this._state = JTTELLO_STATE.SOCK_READY;
-                }
             }
         );
 
         this._sockCommand.bind(this._portCommand);
         this._sockState.bind(this._portState, '0.0.0.0');
+
+        await sleep.wait(5000, 10, async () => {
+            return this._sockCommandReady && this._sockStateReady;
+        });
 
         // init WebSocket server with client
         try{
@@ -135,7 +119,7 @@ class jtTello{
 
         // init WiFi
         if(count = await this._wifi.init(false)){
-            this.log('WiFi found ' + count + 'APs');
+            this.log('WiFi found ' + count + ' APs');
         }else{
             this.log('WiFi down...');
         }
@@ -206,10 +190,6 @@ class jtTello{
             clearInterval(responseWatchdog);
             return result;
         });
-    }
-
-    isListenerReady(){
-        return this._sockCommandReady && this._sockStateReady;
     }
 
     receiveState(msg, info){

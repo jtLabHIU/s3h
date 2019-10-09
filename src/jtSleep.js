@@ -2,7 +2,7 @@
  * @file synchronous sleep and wait function
  *      jtSleep.js
  * @module ./jtSleep
- * @version 2.00.191009a
+ * @version 2.50.191009b
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -22,54 +22,44 @@ function jtSleep(ms){
 
 /**
  * synchronous wait
- * @param {number} timeout - wait timeout (milliseconds) 
+ * @param {number} timeout - wait timeout (milliseconds) if 0, wait terminate condition
  * @param {number} interval - condition check interval (milliseconds)
  * @param {Function} funcCondition - conditional expression (async function)
- * @param {Function} funcOnTimeout - call on timeout (async function)
+ * @param {Function} funcTerminate - call on timeout or terminater (async function)
  * @returns {boolean} - true: wait successed  false: timeout
  */
 async function jtWait(
     timeout = 5000,
     interval = 10,
     funcCondition = async function(){return true;},
-    funcOnTimeout = async function(){return}
+    funcTerminate = async function(){return}
 ){
     let timer = timeout;
     let watchdog = null;
+    let condition = false;
     return new Promise( (resolve) => {
         watchdog = setInterval( async function(){
-            const condition = await funcCondition();
+            condition = await funcCondition();
             if(condition){
                 resolve(true);
             }
-            timer = timer - interval;
-            if(timer<0){
-                const dummy = await funcOnTimeout();
-                resolve(false);
+            if(timeout){
+                timer = timer - interval;
+                if(timer<0){
+                    condition = await funcTerminate();
+                    resolve(false);
+                }
+            }else{
+                condition = await funcTerminate();
+                if(condition){
+                    resolve(false);
+                }
             }
         }, interval);
     }).then( (result) => {
         clearInterval(watchdog);
         return result;
     });
-}
-
-//usage: jtWait
-var cond = false;
-async function jtWaitSample(){
-    flipper();
-    console.log('await begin');
-    await jtWait(5000, 10, async function(){
-        return cond;
-    });
-    console.log('await end');
-}
-async function flipper(){
-    cond = false;
-    console.log('condition false');
-    await jtSleep(3000);
-    cond = true;
-    console.log('condition true');
 }
 
 //usage: a sample in async function
@@ -96,14 +86,43 @@ function jtSleepWithPromiseSample(){
 }
 
 //usage: jtWait
-var cond = false;
+let cond = false;
+let terminater = false;
 async function jtWaitSample(){
-    flipper();
-    console.log('await begin');
-    await jtWait(5000, 10, async function(){
+    let result = false;
+
+    // with timeout
+    console.log('test begin: will timeout after 5 sec.');
+    result = await jtWait(5000, 10, async function(){
         return cond;
     });
-    console.log('await end');
+    console.log('test end:', result);
+
+    console.log('test begin: will success after 3 sec. with timeout');
+    flipper();
+    result = await jtWait(5000, 10, async function(){
+        return cond;
+    });
+    console.log('test end:', result);
+
+    // without timeout
+    console.log('test begin: will success after 3 sec. without timeout');
+    flipper();
+    result = await jtWait(0, 10, async function(){
+        return cond;
+    }, async function(){
+        return terminater;
+    });
+    console.log('test end:', result);
+
+    console.log('test begin: comming terminater after 5 sec.');
+    terminate();
+    result = await jtWait(0, 10, async function(){
+        return cond;
+    }, async function(){
+        return terminater;
+    });
+    console.log('test end:', result);
 }
 async function flipper(){
     cond = false;
@@ -111,6 +130,13 @@ async function flipper(){
     await jtSleep(3000);
     cond = true;
     console.log('condition true');
+}
+async function terminate(){
+    cond = false;
+    console.log('condition false');
+    await jtSleep(5000);
+    console.log('terminater is comming');
+    terminater = true;
 }
 
 //jtSleepInAsyncFunctionSample();
