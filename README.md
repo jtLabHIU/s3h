@@ -75,7 +75,18 @@ send: ap ETROBO etrobocon_hkd
 Response: OK,drone will reboot in 3s
 Received 26 bytes from 192.168.10.1:8889
 
+- multi tello
+    - connect WiFi direct with the target Tello
+    - send `ap SSID PASSWORD` command to tello
+        - restart automatically as STA mode
+    - ping to tello and mome IP and MAC pair
+        - we can connect automatically that lookup with ARP command
+    - sockCommand must listening different UDP port
+    - all tello response to localhost:8889UDP only
+        - these can recognize by IP address that tellos send
+
+- todo 
 limit 1 hop
 scratch 1/2 helper compatible
-
 13:30~14:20 last 10 min
+
