@@ -24,7 +24,7 @@ class jtTello{
     constructor(telloID     = 'D2D555',
                 telloIP     = '192.168.10.1',
                 telloPort   =  8889,
-                portCommand =  8050,
+                portCommand =  0,
                 portState   =  8890,
                 portStream  = 11111,
                 portComm    =  5963){
@@ -79,6 +79,7 @@ class jtTello{
             'listening', () => {
                 const address = this._sockState.address();
                 this.log(`sockState is listening at ${address.address}:${address.port}`);
+                this._portCommand = address.port;
                 this._sockStateReady = true;
                 if(this.isListenerReady()){
                     this._state = JTTELLO_STATE.SOCK_READY;

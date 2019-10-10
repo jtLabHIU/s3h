@@ -49,45 +49,31 @@ app.on('ready', function() {
  
 async function flyTello(){
   // Tello Edu via AP
-  const tello1 = new jtTello('FCA4FF', '172.17.11.3', 8889, 8050);
-  await tello1.init({wifi:false});
-  tello1.connect({wifi:false});
-  const tello2 = new jtTello('FCA00D', '172.17.11.4', 8889, 8051);
-  await tello2.init({wifi:false});
-  tello2.connect({wifi:false});
-  const tello3 = new jtTello('FCA16C', '172.17.11.5', 8889, 8052);
-  await tello3.init({wifi:false});
-  tello3.connect({wifi:false});
+  //const tello1 = new jtTello('FCA4FF', '172.17.11.3', 8889, 8050);
+  //await tello1.init({wifi:false});
+  //tello1.connect({wifi:false});
+  //const tello2 = new jtTello('FCA00D', '172.17.11.4', 8889, 8051);
+  //await tello2.init({wifi:false});
+  //tello2.connect({wifi:false});
+  //const tello3 = new jtTello('FCA16C', '172.17.11.5', 8889, 8052);
+  //await tello3.init({wifi:false});
+  //tello3.connect({wifi:false});
 
   // Tello WiFi direct
-  //const tello = new jtTello('FCA16C');
-  //await tello.init({wifi:true});
-  //tello.connect({wifi:true});
+  const tello = new jtTello('D2D555', '192.168.10.1', 8889, );
+  await tello.init({wifi:true});
+  tello.connect({wifi:true});
 
   await sleep(2000);
 
-  tello1.sendCommand('command');
-  tello1.sendCommand('sdk?');
-  tello1.sendCommand('battery?');
-  tello2.sendCommand('command');
-  tello2.sendCommand('sdk?');
-  tello2.sendCommand('battery?');
-  tello3.sendCommand('command');
-  tello3.sendCommand('sdk?');
-  tello3.sendCommand('battery?');
+  await tello.sendCommand('command');
+  await tello.sendCommand('sdk?');
+  await tello.sendCommand('battery?');
   await sleep(2000);
   //await tello.sendCommand('ap ETROBO etrobocon_hkd');
-  tello1.sendCommand('takeoff');
-  tello2.sendCommand('takeoff');
-  tello3.sendCommand('takeoff');
-  await sleep(10000);
-  tello1.sendCommand('flip f');
-  tello2.sendCommand('flip f');
-  tello3.sendCommand('flip f');
-  await sleep(5000);
-  tello1.sendCommand('land');
-  tello2.sendCommand('land');
-  tello3.sendCommand('land');
+  await tello.sendCommand('takeoff');
+  await tello.sendCommand('flip f');
+  await tello.sendCommand('land');
 
   return
 }
