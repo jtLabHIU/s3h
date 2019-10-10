@@ -9,11 +9,7 @@ async function test(){
     await client.init();
     await client.request('connect', 'module');
     await client.request('command');
-    await repeater.waitRequest();
-    console.log('request:', repeater.request);
-    await repeater.waitRequest();
-    console.log('request:', repeater.request);
-    console.log('request:', repeater.requestQue.length);
+    repeater.close();
 }
 
 test();

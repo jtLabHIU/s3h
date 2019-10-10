@@ -21,14 +21,14 @@ const JTTELLO_DIRECT_COMMANDS = ['emergency', 'rc'];
 const JTTELLO_PASS_COMMANDS = ['reset_all'];
 
 class jtTello{
-    constructor(telloID     = 'D2D555',
-                telloIP     = '192.168.10.1',
-                telloPort   =  8889,
-                portCommand =  8050,
-                portState   =  8890,
-                portStream  = 11111,
-                portComm    =  5963){
-        
+    constructor(
+        telloID     = 'D2D555',
+        telloIP     = '192.168.10.1',
+        telloPort   =  8889,
+        portCommand =  8050,
+        portState   =  8890,
+        portStream  = 11111
+    ){
         this._telloID     = telloID;
         this._telloSSID   = 'TELLO-' + telloID;
         this._telloIP     = telloIP;
@@ -36,7 +36,6 @@ class jtTello{
         this._portCommand = portCommand;
         this._portState   = portState;
         this._portStream  = portStream;
-        this._portComm    = portComm;
 
         this._lock  = false;
         this._order = [];
@@ -49,11 +48,6 @@ class jtTello{
 
         this._sockCommand = null;
         this._sockState = null;
-
-        this._wifi = new wifi();
-        this._commServ = null;
-        this._cmdServ = null;
-        this._commID = 0;
     }
 
     get response(){
@@ -99,30 +93,7 @@ class jtTello{
         await sleep.wait(5000, 10, async () => {
             return this._sockCommandReady && this._sockStateReady;
         });
-
-        // init WebSocket server with client
-        try{
-            this._commServ = new ws.Server({port:this._portComm});
-            this._commServ.on('connection', (sock) => {
-                sock.on('message', (message) => {
-                    this._onCommServGetMessage(message);
-                });
-                sock.on('close', () => {
-                    this._onCommServConnectionClose();
-                });
-            });
-            this.log('commServ is listening at WebSocket', this._portComm);
-        }catch(e){
-            this.log('create commServ failed at WebSocket', this._portComm);
-            this.log(e);
-        }
-
-        // init WiFi
-        if(count = await this._wifi.init(false)){
-            this.log('WiFi found ' + count + ' APs');
-        }else{
-            this.log('WiFi down...');
-        }
+        
         return;
     }
 

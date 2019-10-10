@@ -35,7 +35,7 @@ class jtWebSockClient{
             this._sock = new ws('ws://' + this._hostComm + ":" + this._portComm);
             this._sock.on('open', () => {
                 this._sock.on('message', (message) => {
-                    this._responseQue.push(message);
+                    this._responseBuffer.push(JSON.parse(message));
                 });
                 this._sock.on('close', () => {
                     this.log('client close');
@@ -60,12 +60,18 @@ class jtWebSockClient{
 
     async getResponse(commID){
         let result = null;
-        if(this._responseBuffer.length){
-            const resultSet = this._responseBuffer.filter(
-                value => (value.commID === commID) 
-            );
-            if(resultSet.length){
-                result = resultSet[0];
+        let idx = 0;
+        let len = this._responseBuffer.length;
+        if(len){
+            result = [];
+            while(idx < len){
+                if(this._responseBuffer[idx].commID === commID){
+                    result.push(this._responseBuffer[idx]);
+                    this._responseBuffer.splice(idx,1);
+                    len--;
+                }else{
+                    idx++;
+                }
             }
         }
         return result;
@@ -87,8 +93,10 @@ class jtWebSockClient{
                     return (response = await this.getResponse(commID)) !== null; 
                 })
             ){
-                this.log(response);
+                this.log('WSC request:',response);
                 result = response;
+            } else {
+                this.log('WSC request: response is null');
             }
         }catch(e){
             this.log('WSC request() send:', e);
