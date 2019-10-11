@@ -25,25 +25,38 @@ const sleep = require('./jtSleep');
  * @property {string} message - response message
  */
 
-var _responseQue = [];
-
 class jtWebSockRepeater{
     constructor(args){
         this._wifi = new wifi();
 
-        // WebSocket up/downstream port
+        this._devices = [{
+            'name': 'D2D555',
+            'ssid': 'TELLO-D2D555',
+            'mac': 'D2D555',
+            'ip': '192.168.10.1',
+            'port': {'udp':8889},
+            'via': {'udp':8889},
+            //'via': {'udp':0},
+            'downstream': [{'udp':8890}, {'udp':11111}]
+        }];
+        if(args.devices){
+            this._devices = args.devices;
+        }
+
+        this._device = null;
+
+        /** WebSocket up/downstream port
+         *  @type {number} _portComm */
         this._portComm = 8888;
         if(args.portComm){
             this._portComm = args.portComm;
         }
 
-
-
         this._msgIDCount = 0;
         this._requestQue = [];
+        this._responseQue = [];
 
         this._commServ = null;
-        this._devServ = null;
 
         this._watchdogTerminater = false;
     }
@@ -103,13 +116,7 @@ class jtWebSockRepeater{
             this.log('create commServ failed at WebSocket', this._portComm);
             result = false;
         }
-    
-        // init WiFi
-        if(count = await this._wifi.init(false)){
-            this.log('WiFi found ' + count + ' APs');
-        }else{
-            this.log('WiFi down...');
-        }
+
         return result;
     }
 
@@ -134,7 +141,7 @@ class jtWebSockRepeater{
     }
 
     async start(){
-        this._watchdogTeminater = false;
+        this._watchdogTerminater = false;
         while(await this.waitRequest()){
             const req = this.request;
             let response = req;
@@ -157,13 +164,19 @@ class jtWebSockRepeater{
                 'result': response.result,
                 'message': response.message
             });
-            const res = response.sock.send(sender);
+            if(!this._watchdogTerminater){
+                const res = response.sock.send(sender);
+            }    
             this.log('request finish:', sender);
         }
     }
 
     stop(){
         this._watchdogTerminater = true;
+        try{
+            this._device.socket.close();
+            this._wifi.disconnect();
+        }catch(maleCatch){}
     }
 
     close(){
@@ -172,8 +185,36 @@ class jtWebSockRepeater{
 
     async sendCommand(req){
         let response = req;
-        response.result = true;
-        response.message = 'OK';
+        const message = Buffer.from(req.command);
+        this.log('send to device:', req.command);
+        try{
+            await this._device.socket.send(message, 0, message.length,
+                this._device.port.udp, this._device.ip,
+                function(err){
+                    if(err){
+                        throw err;
+                    }
+                }
+            );
+            response.message = await this.popResponse(this._device.socket);
+            if(response.message === false){
+                response.result = false;
+                response.message = 'recv from device: response timeout'
+            }else{
+                response.result = true;
+                this.log('recv from device:', response.message);
+            }
+        }catch(e){
+            this.log('device command send error', e);
+            response.message = 'device command send error';
+        }
+        return response;
+    }
+
+    async sendCommandAsync(req){
+        let response = req;
+        response.result = false;
+        response.message = 'not implement';
         return response;
     }
 
@@ -181,11 +222,131 @@ class jtWebSockRepeater{
         let response = req;
         response.result = false;
         response.message = 'not understand';
-        if(req.command == 'terminate'){
+
+        const commands = req.command.split(' ');
+        const command = commands[0];
+
+        if(command == 'terminate'){
             response.result = true;
             response.message = 'OK';
+        }else if(command == 'connect'){
+            this.log('execModuleCommand: connect invoked');
+            if(commands.length>1){
+                response = await this.connect(response, commands[1]);
+            }else{
+                response = await this.connect(response);
+            }
         }
         return response;
+    }
+
+    async connect(response, deviceName = null){
+        let device = null;
+        let count = 0;
+
+        if(deviceName){
+            device = this._devices.find( value => (value.name == deviceName));
+        }else{
+            if(this._device){
+                device = this._device;
+            }else if(this._devices.length){
+                device = this._devices[0];
+            }else{
+                device = {
+                    'ssid': null
+                }
+            }
+        }
+        this._device = device;
+
+        // connect WiFi direct
+        if(device.ssid){
+            // init WiFi
+            if(count = await this._wifi.init(false)){
+                this.log('WiFi found ' + count + ' APs');
+            }else{
+                response.message = 'WiFi down';
+                return response;
+            }
+
+            // connect WiFi AP
+            this.log('try to WiFi direct connect:', device.ssid);
+            const network = await this._wifi.lookup(device.ssid);
+            if(network){
+                let loop = true;
+                while(loop){
+                    this.log((await this._wifi.connect(network)).msg);
+                    device.ip = this._wifi.connectionState.network.ip;
+                    if(device.ip){
+                        this.log('IP:', device.ip);
+                        loop = false;
+                    }else if(this._wifi.connectionState.connected){
+                        this.log('IP lookup failed. retry to connect');
+                    }else{
+                        response.message = 'WiFi direct connect: ' + device.ssid + ' not found';
+                        return response;
+                    }
+                }
+            }else{
+                response.message = 'WiFi direct connect: ' + device.ssid + ' not found';
+                return response;
+            }
+
+            // make socket
+            if(typeof device.via.udp !== 'undefined'){
+                device.socket = dgram.createSocket('udp4');
+                device.socket.responseQue = [];
+
+                device.socket.on(
+                    'message', (msg, rinfo) => {
+                        //ToDo: rinfo back {address,family,port,size} from sender device
+                        this.log('devSock onMessage:', msg);
+                        device.socket.responseQue.push(msg.toString());
+                    }
+                );
+                device.socket.on(
+                    'listening', () => {
+                        const address = device.socket.address();
+                        this.log(`devSock is listening at ${address.address}:${address.port}`);
+                        device.socket.ready = true;
+                    }
+                );
+                device.socket.bind(device.via.udp);
+                await sleep.wait(5000, 10, async () => { return device.socket.ready; });
+                response.result = true;
+                response.message = 'ok';
+            }else{
+                this.log('devServ UDP datagram undefined');
+                return response;
+            }
+            this._device = device;
+        }
+        return response;
+    }
+
+    responseReady(sock){
+        return sock.responseQue.length;
+    }
+
+    popResponse(sock, timeout = 10000){
+        let result = null;
+        let responseWatchdog = null;
+        const interval = 5;
+        let timer = timeout/interval;
+        return new Promise(resolve => {
+            responseWatchdog = setInterval( () => {
+                if(sock.responseQue.length>0){
+                    result = sock.responseQue.shift();
+                    resolve(result);
+                }
+                if(this._watchdogTerminater || timer-- < 0){
+                    resolve(false);
+                }
+            }, interval);
+        }).then((result) => {
+            clearInterval(responseWatchdog);
+            return result;
+        });
     }
     
     log(msg, ...msgs){

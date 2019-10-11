@@ -94,3 +94,5 @@ limit 1 hop
 scratch 1/2 helper compatible
 13:30~14:20 last 10 min
 
+- devSock
+    - Tello can't reconnect to another UDP port, such make it by 0

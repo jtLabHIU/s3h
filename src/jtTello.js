@@ -15,7 +15,6 @@ const http = require('http');
 const dgram = require('dgram');
 const sleep = require('./jtSleep');
 const wifi = require('./jtWiFi');
-const ws = require('ws');
 
 const JTTELLO_DIRECT_COMMANDS = ['emergency', 'rc'];
 const JTTELLO_PASS_COMMANDS = ['reset_all'];
@@ -25,7 +24,7 @@ class jtTello{
         telloID     = 'D2D555',
         telloIP     = '192.168.10.1',
         telloPort   =  8889,
-        portCommand =  8050,
+        portCommand =  0,
         portState   =  8890,
         portStream  = 11111
     ){
