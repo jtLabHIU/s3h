@@ -2,7 +2,7 @@
  * @file Synchronized WebSocket client for jtWebSocketRepeater
  *      jtWebSockRepeater.js
  * @module ./jtWebSockClient
- * @version 0.00.191007a
+ * @version 1.00.191011a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University

@@ -2,7 +2,7 @@
  * @file Synchronized WebSocket repeater to native socket
  *      jtWebSockRepeater.js
  * @module ./jtWebSockRepeater
- * @version 0.00.191007a
+ * @version 1.00.191011a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -35,8 +35,7 @@ class jtWebSockRepeater{
             'mac': 'D2D555',
             'ip': '192.168.10.1',
             'port': {'udp':8889},
-            'via': {'udp':8889},
-            //'via': {'udp':0},
+            'via': {'udp':0},
             'downstream': [{'udp':8890}, {'udp':11111}]
         }];
         if(args.devices){
@@ -59,6 +58,23 @@ class jtWebSockRepeater{
         this._commServ = null;
 
         this._watchdogTerminater = false;
+    }
+
+    addDeviceInfo(device){
+        this.removeDeviceInfo(device.name);
+        this._devices.push(device);
+        this._device = device;
+    }
+
+    removeDeviceInfo(name){
+        let result = false;
+        this._devices.filter( (value, index, array) => {
+            if(value.name === name){
+                array.splice(index, 1);
+                result = true;
+            }
+        });
+        return result;
     }
 
     async init(){
@@ -205,7 +221,7 @@ class jtWebSockRepeater{
                 this.log('recv from device:', response.message);
             }
         }catch(e){
-            this.log('device command send error', e);
+            this.log('device command send error');
             response.message = 'device command send error';
         }
         return response;

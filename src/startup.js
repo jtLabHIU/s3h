@@ -1,7 +1,7 @@
 const {app, BrowserWindow, Menu, Tray} = require('electron');
-const jtTello = require('./jtTello');
 const sleep = require('./jtSleep');
-const jtWebSocket = require('./jtWebSocket');
+const WSR = require('./jtWebSockRepeater');
+const WSC = require('./jtWebSockClient');
 
 let mainWindow = null;
 
@@ -51,25 +51,35 @@ app.on('ready', function() {
 
 
 async function flyTello(){
-  const tello = new jtTello();
-  const client = new jtWebSocket();
-  
-  await tello.init();
-  if(await tello.connect('D2D555')){
-    console.log(await client.createClient('localhost', 5963));
-    await sleep(1000);
-    //console.log(client._client);
-    await client.request('takeoff');
-    await client.request('flip f');
-    await client.request('land');
-    //await tello.sendCommand('command');
-    //await tello.sendCommand('takeoff');
-    //await tello.sendCommand('flip f');
-    //await tello.sendCommand('land');
-  }else{
-    console.log('can not send commands');
+  let result = null;
+  let repeater = new WSR({portComm:5963});
+  repeater.addDeviceInfo(
+      {
+          'name': 'D2D555',
+          'ssid': 'TELLO-D2D555',
+          'mac': 'D2D555',
+          'ip': '192.168.10.1',
+          'port': {'udp':8889},
+          'via': {'udp':8889},
+          'downstream': [{'udp':8890}, {'udp':11111}]
+      }
+  );
+  await repeater.init();
+
+  repeater.removeDeviceInfo('D2D555');
+
+  let client = new WSC({portComm:5963});
+  await client.init();
+  await client.request('connect', 'module');
+  result = await client.request('command');
+  if(result.message !== 'ok'){
+      await client.request('command');
   }
-  //await tello.disconnect();
-  //await tello.destruct();
-  return
+  await client.request('battery?');
+  await client.request('sdk?');
+  await client.request('takeoff');
+  await client.request('flip f');
+  await client.request('land');
+  repeater.close();
+return
 }

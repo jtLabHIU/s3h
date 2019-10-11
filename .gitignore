@@ -62,3 +62,5 @@ typings/
 
 # WLANProfiles
 nodeWifiConnect.xml
+
+/src/test.js
