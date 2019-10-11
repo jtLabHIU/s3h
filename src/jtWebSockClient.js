@@ -2,7 +2,7 @@
  * @file Synchronized WebSocket client for jtWebSocketRepeater
  *      jtWebSockRepeater.js
  * @module ./jtWebSockClient
- * @version 1.00.191011a
+ * @version 1.00.191011b
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -25,6 +25,7 @@ class jtWebSockClient{
 
         this._commID = 0;
         this._sock = null;
+        this._watchdogTerminater = false;
 
         this._responseBuffer = [];
     }
@@ -35,6 +36,7 @@ class jtWebSockClient{
             this._sock = new ws('ws://' + this._hostComm + ":" + this._portComm);
             this._sock.on('open', () => {
                 this._sock.on('message', (message) => {
+                    //this.log('WSC onMessage:', message);
                     this._responseBuffer.push(JSON.parse(message));
                 });
                 this._sock.on('close', () => {
@@ -47,6 +49,7 @@ class jtWebSockClient{
             result = await sleep.wait(5000, 10, async () => {
                 return (this._sock.readyState === ws.OPEN);
             });
+            this.log('WSC WebSock connected:' + this._sock.url);
         }catch(e){
             this.log('WSC.init: catch exeption:', e);
             result = false;
@@ -88,12 +91,13 @@ class jtWebSockClient{
         const commID = (++this._commID);
         const req =  commID + ':' + type + ':' + message;
         try{
+            this.log('WSC request:', req);
             await this._sock.send(req);
             if( await sleep.wait(timeout, 1, async () => {
                     return (response = await this.getResponse(commID)) !== null; 
                 })
             ){
-                this.log('WSC request:',response);
+                this.log('WSC response:',response);
                 result = response;
             } else {
                 this.log('WSC request: response is null');
@@ -102,6 +106,10 @@ class jtWebSockClient{
             this.log('WSC request() send:', e);
         }
         return result;
+    }
+    async close(){
+        this._watchdogTerminater = true;
+        this._sock.close();
     }
 
     log(msg, ...msgs){

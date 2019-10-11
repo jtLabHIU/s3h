@@ -4,12 +4,10 @@ const WSR = require('./jtWebSockRepeater');
 const WSC = require('./jtWebSockClient');
 
 let mainWindow = null;
+let tray = null;
+let repeater = null;
 
-app.on('window-all-closed', function() {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+app.on('window-all-closed', () => {});
 
 app.on('ready', function() {
   mainWindow = new BrowserWindow({
@@ -17,42 +15,36 @@ app.on('ready', function() {
     height: 600,
     'min-width': 640,
     'min-hight': 480,
+    'show': false,
     'accept-first-mouse': true,
-    show: false,
     icon: './asset/icon.png'    
   });
   mainWindow.loadURL('file://' + __dirname + '/index.html');
 
   mainWindow.on('closed', function() {
+    repeater.close();
     mainWindow = null;
+    app.quit();
   });
 
-  var appIcon = null;
-  appIcon = new Tray('./asset/icon.png');
+  tray = new Tray('./asset/icon.png');
   var contextMenu = Menu.buildFromTemplate([
-      { label: 'Restore', type: 'radio' }
+      { label: 'exit', click(menuItem){ app.quit(); } }
   ]);
-  appIcon.setToolTip('jtS3Helper');
-  appIcon.setContextMenu(contextMenu);
+  tray.setToolTip('jtS3Helper');
+  tray.setContextMenu(contextMenu);
 
-  appIcon.on('click', () => {
-    mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show()
+  tray.on('click', () => {
+    tray.popUpContextMenu(contextMenu);
+    //mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
   });
-  mainWindow.on('show', () => {
-    //mainWindow.setHighlightMode('always')
-  });
-  mainWindow.on('hide', () => {
-    //mainWindow.setHighlightMode('never')
-  });
-  flyTello();
-
 });
 
+startCommServ();
 
 
-async function flyTello(){
-  let result = null;
-  let repeater = new WSR({portComm:5963});
+async function startCommServ(){
+  repeater = new WSR({portComm:5963});
   repeater.addDeviceInfo(
       {
           'name': 'D2D555',
@@ -64,22 +56,6 @@ async function flyTello(){
           'downstream': [{'udp':8890}, {'udp':11111}]
       }
   );
-  await repeater.init();
-
-  repeater.removeDeviceInfo('D2D555');
-
-  let client = new WSC({portComm:5963});
-  await client.init();
-  await client.request('connect', 'module');
-  result = await client.request('command');
-  if(result.message !== 'ok'){
-      await client.request('command');
-  }
-  await client.request('battery?');
-  await client.request('sdk?');
-  await client.request('takeoff');
-  await client.request('flip f');
-  await client.request('land');
-  repeater.close();
-return
+  repeater.init();
+  return;
 }

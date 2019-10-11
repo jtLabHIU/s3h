@@ -2,7 +2,7 @@
  * @file Synchronized WebSocket repeater to native socket
  *      jtWebSockRepeater.js
  * @module ./jtWebSockRepeater
- * @version 1.00.191011a
+ * @version 1.00.191011b
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -86,6 +86,7 @@ class jtWebSockRepeater{
             this._commServ = new ws.Server({port:this._portComm});
             this._commServ.readyState = ws.CLOSED;
             this._commServ.on('connection', (sock) => {
+                this._commServ.connected = true
                 sock.on('message', (message) => {
                     const temp = message.split(':');
                     this._requestQue.push({
@@ -99,14 +100,11 @@ class jtWebSockRepeater{
                     });
                 });
                 sock.on('close', () => {
-                    this._requestQue.push({
-                        'msgID': this._msgIDCount++,
-                        'commID': -5963,
-                        'type': 'broadcast',
-                        'command': 'terminate',
-                        'result': false,
-                        'message': 'not execute yet'
-                    });
+                    this.log('commsock connection close');
+                    if(this._device.socket){
+                        this._device.socket.close();
+                    }
+                    this._commServ.connected = false;
                 });
             });
             this._commServ.on('listening', () => {
@@ -117,6 +115,14 @@ class jtWebSockRepeater{
             this._commServ.on('close', () => {
                 this._commServ.readyState = ws.CLOSING;
                 this.log('commServ is closing');
+                this._requestQue.push({
+                    'msgID': this._msgIDCount++,
+                    'commID': -5963,
+                    'type': 'broadcast',
+                    'command': 'terminate',
+                    'result': false,
+                    'message': 'not execute yet'
+                });
                 this.stop();
             });
         }catch(e){
@@ -159,31 +165,33 @@ class jtWebSockRepeater{
     async start(){
         this._watchdogTerminater = false;
         while(await this.waitRequest()){
-            const req = this.request;
-            let response = req;
-            if(req.type == 'sync'){
-                response = await this.sendCommand(req);
-            } else if(req.type == 'async'){
-                this.sendCommandAsync(req);
-                response.result = true;
-                response.message = 'send as async'
-            } else if(req.type == 'broadcast'){
-                this.execModuleCommand(req);
-                this.sendCommandAsync(req);
-                response.result = true;
-                response.message = 'broadcast as async'
-            } else {
-                response = await this.execModuleCommand(req);
+            if(this._commServ.connected){
+                const req = this.request;
+                let response = req;
+                if(req.type == 'sync'){
+                    response = await this.sendCommand(req);
+                } else if(req.type == 'async'){
+                    this.sendCommandAsync(req);
+                    response.result = true;
+                    response.message = 'send as async'
+                } else if(req.type == 'broadcast'){
+                    this.execModuleCommand(req);
+                    this.sendCommandAsync(req);
+                    response.result = true;
+                    response.message = 'broadcast as async'
+                } else {
+                    response = await this.execModuleCommand(req);
+                }
+                const sender = JSON.stringify({
+                    'commID': parseInt(response.commID),
+                    'result': response.result,
+                    'message': response.message
+                });
+                if(!this._watchdogTerminater && this._commServ.connected){
+                    const res = response.sock.send(sender);
+                }    
+                this.log('request finish:', sender);
             }
-            const sender = JSON.stringify({
-                'commID': parseInt(response.commID),
-                'result': response.result,
-                'message': response.message
-            });
-            if(!this._watchdogTerminater){
-                const res = response.sock.send(sender);
-            }    
-            this.log('request finish:', sender);
         }
     }
 
@@ -355,7 +363,7 @@ class jtWebSockRepeater{
                     result = sock.responseQue.shift();
                     resolve(result);
                 }
-                if(this._watchdogTerminater || timer-- < 0){
+                if(this._watchdogTerminater || timer-- < 0 || !this._commServ.connected){
                     resolve(false);
                 }
             }, interval);
