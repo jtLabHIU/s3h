@@ -1,3 +1,12 @@
+/**
+ * @file jtS3H - jtLab Scratch 3.0 Helper
+ *      startup.js
+ * @version 1.00.191011c
+ * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
+ * @license MIT (see 'LICENSE' file)
+ * @copyright (C) 2019 jtLab, Hokkaido Information University
+ */
+
 const {app, BrowserWindow, Menu, Tray} = require('electron');
 const sleep = require('./jtSleep');
 const WSR = require('./jtWebSockRepeater');
@@ -17,7 +26,7 @@ app.on('ready', function() {
     'min-hight': 480,
     'show': false,
     'accept-first-mouse': true,
-    icon: './asset/icon.png'    
+    icon: 'asset/icon.png'    
   });
   mainWindow.loadURL('file://' + __dirname + '/index.html');
 
