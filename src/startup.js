@@ -8,9 +8,10 @@
  */
 
 const {app, BrowserWindow, Menu, Tray} = require('electron');
+
 const sleep = require('./jtSleep');
 const WSR = require('./jtWebSockRepeater');
-
+const { exec } = require('child_process');
 let mainWindow = null;
 let tray = null;
 let repeater = null;
@@ -49,7 +50,18 @@ app.on('ready', function() {
 });
 
 startCommServ();
-
+exec('cd', (error, stdout) => {
+  let pathAdd = '';
+  const path = stdout.split('\\');
+  if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
+    pathAdd = 'jtS3H-win32-x64\\'    
+    exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
+      if(error){
+        console.log(error);
+      }
+    });
+  }
+});
 
 async function startCommServ(){
   repeater = new WSR({portComm:5963});

@@ -9,6 +9,27 @@ jtLab Scratch 3 Helper app
 - `mkdir jtScratch` on NTFS filesystem
 - `cd jtScratch`
 - `git clone https://github.com/jtLabHIU/scratch-vm.git`
+- `cd scratch-vm`
+- `npm install`
+- `npm link`
+- `cd ..`
+- `git clone https://github.com/jtLabHIU/scratch-gui.git`
+- `cd scratch-gui`
+- `npm install`
+- `npm link scratch-vm`
+- `BUILD_MODE=dist STATIC_PATH=static npm run build`
+- `npm link`
+- `cd ..`
+- `git clone https://github.com/jtLabHIU/scratch-desktop.git`
+- `cd scratch-desktop`
+- `npm install`
+- `npm link scratch-gui`
+- `npm run dist`
+- `cd ..`
+- `git clone https://github.com/jtLabHIU/s3h.git`
+- `cd s3h`
+- `npm install`
+- `npm run dist`
 
 
 
