@@ -49,23 +49,7 @@ app.on('ready', function() {
 });
 
 startCommServ();
-/*
-  // Tello WiFi direct
-  const tello = new jtTello('D2D555', '192.168.10.1', 8889, );
-  await tello.init({wifi:true});
-  tello.connect({wifi:true});
 
-  await sleep(2000);
-
-  await tello.sendCommand('command');
-  await tello.sendCommand('sdk?');
-  await tello.sendCommand('battery?');
-  await sleep(2000);
-  //await tello.sendCommand('ap ETROBO etrobocon_hkd');
-  await tello.sendCommand('takeoff');
-  await tello.sendCommand('flip f');
-  await tello.sendCommand('land');
-*/
 
 async function startCommServ(){
   repeater = new WSR({portComm:5963});
