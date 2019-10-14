@@ -4,14 +4,33 @@ jtLab Scratch 3 Helper app
 - run in task tray
 - communicate with Scratch 3 through WebSocket
 
-see also `readme_scratch.md`
+# first step guide to build for Windows (with MSYS2)
+
+- `mkdir jtScratch` on NTFS filesystem
+- `cd jtScratch`
+- `git clone https://github.com/jtLabHIU/scratch-vm.git`
+
+
+
 
 ## How to run
 - `git clone https://github.com/jtLabHIU/s3h.git`
 - `cd s3h`
 - `npm install`
 - modify `/node_modules/wifi-control/lib/win32.js` (see below)
-- `./node_modules/.bin/electron .`
+- `npx electron .`
+
+see also `readme_scratch.md`
+
+## webpack proxy
+- add proxy entry into line 24 of `webpack.config.js` on `scratch-gui`
+```
+        proxy: {
+            'jtS3H': {
+                target: 'http://localhost:5963'
+            }
+        }
+```
 
 ## further information
 - [wifi-control](https://www.npmjs.com/package/wifi-control)

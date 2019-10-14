@@ -62,18 +62,10 @@ from [Scratch Wiki](https://ja.scratch-wiki.info/wiki/Scratch_3.0%E3%81%AE%E6%8B
 
 ## to scratch-gui
 
-- put image files into `scratch-gui\src\lib\libraries\extensions`
+- put image files into `scratch-gui/src/lib/libraries/extensions`
     - 600x372 and 80x80
-- edit `scratch-gui\src\lib\libraries\extensions`
+- edit `scratch-gui/src/lib/libraries/extensions/index.jsx`
     - import image files and add export default dection
-- add proxy entry into `webpack.config.js`
-```
-        proxy: {
-            'jtS3H': {
-                target: 'http://localhost:5963'
-            }
-        }
-```
 
 ## to scratch-vm
 
