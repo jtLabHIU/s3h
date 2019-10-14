@@ -86,8 +86,11 @@ class jtWebSockRepeater{
             this._commServ = new ws.Server({port:this._portComm});
             this._commServ.readyState = ws.CLOSED;
             this._commServ.on('connection', (sock) => {
-                this._commServ.connected = true
+                this.log('commServ accept client');
+                this._commServ.connected = true;
+
                 sock.on('message', (message) => {
+                    this.log('commSock accept message');
                     const temp = message.split(':');
                     this._requestQue.push({
                         'msgID': this._msgIDCount++,
@@ -260,6 +263,13 @@ class jtWebSockRepeater{
             }else{
                 response = await this.connect(response);
             }
+        }else if(command == 'popResponse'){
+            this.log('execModuleCommand: pop response');
+            response.message = await this.popResponse(this._device.socket);
+            if(response.message === false){
+                response.result = false;
+                response.message = 'recv from device: response timeout'
+            }
         }
         return response;
     }
@@ -267,6 +277,11 @@ class jtWebSockRepeater{
     async connect(response, deviceName = null){
         let device = null;
         let count = 0;
+
+        if(this._device.connected){
+            this.stop();
+            this.start();
+        }
 
         if(deviceName){
             device = this._devices.find( value => (value.name == deviceName));

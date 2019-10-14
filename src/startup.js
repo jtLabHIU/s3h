@@ -10,7 +10,6 @@
 const {app, BrowserWindow, Menu, Tray} = require('electron');
 const sleep = require('./jtSleep');
 const WSR = require('./jtWebSockRepeater');
-const WSC = require('./jtWebSockClient');
 
 let mainWindow = null;
 let tray = null;

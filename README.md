@@ -19,6 +19,7 @@ jtLab Scratch 3 Helper app
 - [wifi-control](https://www.npmjs.com/package/wifi-control)
 - [Tello SDK 2.0](https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf)
 - [Tello binary command(Japanese)](https://qiita.com/mozzio369/items/a942a212c6b5d3fdeb48)
+- [ Scratch 3.0 Extension specification](https://github.com/LLK/scratch-vm/blob/develop/docs/extensions.md)
 
 ## ToDo to release 2
 - add watchdog lib into jtSleep
