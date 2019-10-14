@@ -4,13 +4,14 @@ jtLab Scratch 3 Helper app
 - run in task tray
 - communicate with Scratch 3 through WebSocket
 
+see also `readme_scratch.md`
+
 ## How to run
-- `npm -g install electron`
 - `git clone https://github.com/jtLabHIU/s3h.git`
 - `cd s3h`
 - `npm install`
 - modify `/node_modules/wifi-control/lib/win32.js` (see below)
-- `electron .`
+- `./node_modules/.bin/electron .`
 
 ## modify wifi-control module
 - add `chcp 437 & ` into before `netsh` of line 69 & 163
