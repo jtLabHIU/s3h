@@ -297,6 +297,7 @@ class jtWiFi{
             clearInterval(this._watchdog);
             result = await this.resetWiFi_Promise();
             this.refreshIfaceState();
+            console.log('WiFi disconnected.');
         }catch(e){
             if(this._debug){
                 console.log('disconnect error:', e);

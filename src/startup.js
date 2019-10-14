@@ -1,14 +1,21 @@
+/**
+ * @file jtS3H - jtLab Scratch 3.0 Helper
+ *      startup.js
+ * @version 1.00.191011c
+ * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
+ * @license MIT (see 'LICENSE' file)
+ * @copyright (C) 2019 jtLab, Hokkaido Information University
+ */
+
 const {app, BrowserWindow, Menu, Tray} = require('electron');
-const jtTello = require('./jtTello');
 const sleep = require('./jtSleep');
+const WSR = require('./jtWebSockRepeater');
 
 let mainWindow = null;
+let tray = null;
+let repeater = null;
 
-app.on('window-all-closed', function() {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+app.on('window-all-closed', () => {});
 
 app.on('ready', function() {
   mainWindow = new BrowserWindow({
@@ -16,49 +23,33 @@ app.on('ready', function() {
     height: 600,
     'min-width': 640,
     'min-hight': 480,
+    'show': false,
     'accept-first-mouse': true,
-    show: false,
-    icon: './asset/icon.png'    
+    icon: 'asset/icon.png'    
   });
   mainWindow.loadURL('file://' + __dirname + '/index.html');
 
   mainWindow.on('closed', function() {
+    repeater.close();
     mainWindow = null;
+    app.quit();
   });
 
-  var appIcon = null;
-  appIcon = new Tray('./asset/icon.png');
+  tray = new Tray('./asset/icon.png');
   var contextMenu = Menu.buildFromTemplate([
-      { label: 'Restore', type: 'radio' }
+      { label: 'exit', click(menuItem){ app.quit(); } }
   ]);
-  appIcon.setToolTip('Electron.js App');
-  appIcon.setContextMenu(contextMenu);
+  tray.setToolTip('jtS3Helper');
+  tray.setContextMenu(contextMenu);
 
-  appIcon.on('click', () => {
-    mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show()
+  tray.on('click', () => {
+    tray.popUpContextMenu(contextMenu);
+    //mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
   });
-  mainWindow.on('show', () => {
-    //mainWindow.setHighlightMode('always')
-  });
-  mainWindow.on('hide', () => {
-    //mainWindow.setHighlightMode('never')
-  });
-  flyTello();
 });
 
- 
-async function flyTello(){
-  // Tello Edu via AP
-  //const tello1 = new jtTello('FCA4FF', '172.17.11.3', 8889, 8050);
-  //await tello1.init({wifi:false});
-  //tello1.connect({wifi:false});
-  //const tello2 = new jtTello('FCA00D', '172.17.11.4', 8889, 8051);
-  //await tello2.init({wifi:false});
-  //tello2.connect({wifi:false});
-  //const tello3 = new jtTello('FCA16C', '172.17.11.5', 8889, 8052);
-  //await tello3.init({wifi:false});
-  //tello3.connect({wifi:false});
-
+startCommServ();
+/*
   // Tello WiFi direct
   const tello = new jtTello('D2D555', '192.168.10.1', 8889, );
   await tello.init({wifi:true});
@@ -74,6 +65,21 @@ async function flyTello(){
   await tello.sendCommand('takeoff');
   await tello.sendCommand('flip f');
   await tello.sendCommand('land');
+*/
 
-  return
+async function startCommServ(){
+  repeater = new WSR({portComm:5963});
+  repeater.addDeviceInfo(
+      {
+          'name': 'D2D555',
+          'ssid': 'TELLO-D2D555',
+          'mac': 'D2D555',
+          'ip': '192.168.10.1',
+          'port': {'udp':8889},
+          'via': {'udp':8889},
+          'downstream': [{'udp':8890}, {'udp':11111}]
+      }
+  );
+  repeater.init();
+  return;
 }
