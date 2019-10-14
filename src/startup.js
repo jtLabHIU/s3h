@@ -54,13 +54,13 @@ exec('cd', (error, stdout) => {
   let pathAdd = '';
   const path = stdout.split('\\');
   if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
-    pathAdd = 'jtS3H-win32-x64\\'    
-    exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
-      if(error){
-        console.log(error);
-      }
-    });
+    pathAdd = 'jtS3H-win32-x64\\';
   }
+  exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
+    if(error){
+      console.log(error);
+    }
+  });
 });
 
 async function startCommServ(){
