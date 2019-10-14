@@ -29,8 +29,9 @@ jtLab Scratch 3 Helper app
 - `git clone https://github.com/jtLabHIU/s3h.git`
 - `cd s3h`
 - `npm install`
+- add `chcp 437 & ` into before `netsh` of line 69 & 163 on `s3h/node_modules/wifi-control/lib/win32.js`
+- modify 'name' and 'ssid' for your Tello ID in `async function startCommServ` on `s3h/src/startup.js`
 - `npm run dist`
-
 
 
 
@@ -42,6 +43,9 @@ jtLab Scratch 3 Helper app
 - `npx electron .`
 
 see also `readme_scratch.md`
+
+## modify wifi-control module
+- add `chcp 437 & ` into before `netsh` of line 69 & 163
 
 ## webpack proxy
 - add proxy entry into line 24 of `webpack.config.js` on `scratch-gui`
