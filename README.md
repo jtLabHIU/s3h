@@ -6,7 +6,7 @@ jtLab Scratch 3 Helper app
 
 # first step guide to build for Windows (with MSYS2)
 
-- `mkdir jtScratch` on NTFS filesystem
+- `mkdir jtScratch` on NTFS filesystem >5GB
 - `cd jtScratch`
 - `git clone https://github.com/jtLabHIU/scratch-vm.git`
 - `cd scratch-vm`
@@ -32,6 +32,7 @@ jtLab Scratch 3 Helper app
 - add `chcp 437 & ` into before `netsh` of line 69 & 163 on `s3h/node_modules/wifi-control/lib/win32.js`
 - modify 'name' and 'ssid' for your Tello ID in `async function startCommServ` on `s3h/src/startup.js`
 - `npm run dist`
+- run `jtS3H-win32-x64\jtS3H.exe`
 
 
 
@@ -40,7 +41,7 @@ jtLab Scratch 3 Helper app
 - `cd s3h`
 - `npm install`
 - modify `/node_modules/wifi-control/lib/win32.js` (see below)
-- `npx electron .`
+- `npm start`(invoke Scratch that compiled static) or `npm run devserv`(use Scratch that running on webpack-dev-server)
 
 see also `readme_scratch.md`
 

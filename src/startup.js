@@ -8,13 +8,29 @@
  */
 
 const {app, BrowserWindow, Menu, Tray} = require('electron');
-
 const sleep = require('./jtSleep');
 const WSR = require('./jtWebSockRepeater');
 const { exec } = require('child_process');
 let mainWindow = null;
 let tray = null;
 let repeater = null;
+
+async function startCommServ(){
+  repeater = new WSR({portComm:5963});
+  repeater.addDeviceInfo(
+      {
+          'name': 'D2D555',
+          'ssid': 'TELLO-D2D555',
+          'mac': 'D2D555',
+          'ip': '192.168.10.1',
+          'port': {'udp':8889},
+          'via': {'udp':8889},
+          'downstream': [{'udp':8890}, {'udp':11111}]
+      }
+  );
+  repeater.init();
+  return;
+}
 
 app.on('window-all-closed', () => {});
 
@@ -50,32 +66,24 @@ app.on('ready', function() {
 });
 
 startCommServ();
-exec('cd', (error, stdout) => {
-  let pathAdd = '';
-  const path = stdout.split('\\');
-  if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
-    pathAdd = 'jtS3H-win32-x64\\';
-  }
-  exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
-    if(error){
-      console.log(error);
-    }
-  });
-});
 
-async function startCommServ(){
-  repeater = new WSR({portComm:5963});
-  repeater.addDeviceInfo(
-      {
-          'name': 'D2D555',
-          'ssid': 'TELLO-D2D555',
-          'mac': 'D2D555',
-          'ip': '192.168.10.1',
-          'port': {'udp':8889},
-          'via': {'udp':8889},
-          'downstream': [{'udp':8890}, {'udp':11111}]
+console.log(process.env.JTS3H_MODE_DEVSERV.trim())
+console.log(process.env.JTS3H_MODE_DEVSERV.trim().length)
+console.log(process.env.JTS3H_MODE_DEVSERV.trim() != 'true')
+if(process.env.JTS3H_MODE_DEVSERV === undefined || process.env.JTS3H_MODE_DEVSERV.trim() != 'true'){
+  exec('cd', (error, stdout) => {
+    let pathAdd = '';
+    const path = stdout.split('\\');
+    if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
+      pathAdd = 'jtS3H-win32-x64\\';
+    }
+    exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
+      if(error){
+        console.log(error);
       }
-  );
-  repeater.init();
-  return;
+    });
+    console.log('"' + pathAdd + 'win-unpacked\\Scratch Desktop.exe" was invoked as jtScratch');
+  });
+}else{
+  console.log('now waiting for connect jtScratch that running on webpack-dev-server');  
 }
