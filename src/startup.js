@@ -67,9 +67,6 @@ app.on('ready', function() {
 
 startCommServ();
 
-console.log(process.env.JTS3H_MODE_DEVSERV.trim())
-console.log(process.env.JTS3H_MODE_DEVSERV.trim().length)
-console.log(process.env.JTS3H_MODE_DEVSERV.trim() != 'true')
 if(process.env.JTS3H_MODE_DEVSERV === undefined || process.env.JTS3H_MODE_DEVSERV.trim() != 'true'){
   exec('cd', (error, stdout) => {
     let pathAdd = '';

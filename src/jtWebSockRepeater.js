@@ -92,11 +92,16 @@ class jtWebSockRepeater{
                 sock.on('message', (message) => {
                     this.log('commSock accept message');
                     const temp = message.split(':');
+                    let command = temp[2];
+                    let counter = 3;
+                    while((temp.length)>counter){
+                        command = command + ':' + temp[counter++]
+                    }
                     this._requestQue.push({
                         'msgID': this._msgIDCount++,
                         'commID': temp[0],
                         'type': temp[1],
-                        'command': temp[2],
+                        'command': command,
                         'result': false,
                         'message': 'not execute yet',
                         'sock': sock
@@ -270,6 +275,14 @@ class jtWebSockRepeater{
                 response.result = false;
                 response.message = 'recv from device: response timeout'
             }
+        }else if(command == 'addDevice'){
+            this.log('addDevice invoke');
+            const json = req.command.slice(10);
+            this.log(json);
+            this.addDeviceInfo(JSON.parse(json));
+
+            response.result = true;
+            response.message = 'OK';
         }
         return response;
     }
