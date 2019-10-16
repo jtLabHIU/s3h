@@ -270,6 +270,7 @@ class jtWebSockRepeater{
             }
         }else if(command == 'popResponse'){
             this.log('execModuleCommand: pop response');
+            response.result = true;
             response.message = await this.popResponse(this._device.socket);
             if(response.message === false){
                 response.result = false;
