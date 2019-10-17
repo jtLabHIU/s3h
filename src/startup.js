@@ -1,7 +1,7 @@
 /**
  * @file jtS3H - jtLab Scratch 3.0 Helper
  *      startup.js
- * @version 1.00.191011c
+ * @version 1.01.191017a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -14,6 +14,15 @@ const { exec } = require('child_process');
 let mainWindow = null;
 let tray = null;
 let repeater = null;
+
+// 
+if(!app.requestSingleInstanceLock()){
+  console.log('WSR: already execute');
+  app.quit();
+  app.terminating = true;
+}else{
+  app.terminating = false;
+}
 
 async function startCommServ(){
   repeater = new WSR({portComm:5963});
@@ -65,22 +74,24 @@ app.on('ready', function() {
   });
 });
 
-startCommServ();
+if(!app.terminating){
+  startCommServ();
 
-if(process.env.JTS3H_MODE_DEVSERV === undefined || process.env.JTS3H_MODE_DEVSERV.trim() != 'true'){
-  exec('cd', (error, stdout) => {
-    let pathAdd = '';
-    const path = stdout.split('\\');
-    if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
-      pathAdd = 'jtS3H-win32-x64\\';
-    }
-    exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
-      if(error){
-        console.log(error);
+  if(process.env.JTS3H_MODE_DEVSERV === undefined || process.env.JTS3H_MODE_DEVSERV.trim() != 'true'){
+    exec('cd', (error, stdout) => {
+      let pathAdd = '';
+      const path = stdout.split('\\');
+      if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
+        pathAdd = 'jtS3H-win32-x64\\';
       }
+      exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
+        if(error){
+          console.log(error);
+        }
+      });
+      console.log('"' + pathAdd + 'win-unpacked\\Scratch Desktop.exe" was invoked as jtScratch');
     });
-    console.log('"' + pathAdd + 'win-unpacked\\Scratch Desktop.exe" was invoked as jtScratch');
-  });
-}else{
-  console.log('now waiting for connect jtScratch that running on webpack-dev-server');  
+  }else{
+    console.log('now waiting for connect jtScratch that running on webpack-dev-server');  
+  }
 }
