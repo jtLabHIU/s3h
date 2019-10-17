@@ -140,3 +140,18 @@ scratch 1/2 helper compatible
 
 - devSock
     - Tello can't reconnect to another UDP port, such make it by 0
+
+-jtMesh
+    - Mesh is based upon remote sensor connections through port 42001
+    - `scratch-vm/src/engine/variables.js`
+    - packet: <size: 4 bytes><msg: size bytes>
+    - Most message types contain human-readable strings made up of the following elements:
+        - Unquoted single-word strings (cat, mouse-x)
+        - Quoted strings ("a four word string", "embedded ""quotation marks"" are doubled")
+        - Numbers (1, -1, 3.14, -1.2, .1, -.2)
+        - Booleans (true or false)
+        - Words and strings are encoded in UTF-8.
+    - `sensor-update "note" 60 "seconds" 0.1`
+    - `broadcast "play note"`
+    - [Scratch 2.0 Extension Protcol](https://en.scratch-wiki.info/w/images/ExtensionsDoc.HTTP-9-11.pdf)
+
