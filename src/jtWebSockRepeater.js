@@ -9,6 +9,7 @@
  */
 
 const ws = require('ws');
+const net = require('net');
 const dgram = require('dgram');
 const wifi = require('./jtWiFi');
 const sleep = require('./jtSleep');
@@ -24,6 +25,36 @@ const sleep = require('./jtSleep');
  * @property {boolean} result - whether command execution was successful
  * @property {string} message - response message
  */
+let packet = null;
+/**
+ * - device class
+ *  a device information and instance that connect to WSR
+ * @member {string} name - device name
+ * 
+ */
+class device{
+    /**
+     * @param {*} args 
+     */
+    constructor(args){
+        /** @member {string} - device name */
+        this.name = 'D2D555';
+        /** @member {string} ssid - SSID */
+        this.ssid = 'TELLO-D2D555';
+        /** @member {string} mac - MAC address */
+        this.ssid = '60:60:1f:d2:d5:55';
+        /** @member {string} ip - IP address */
+        this.ip = '192.168.10.1';
+        /** @member {object} port - port number that which port is command port of target device */
+        this.port = { udp: 8889 };
+        /** @member {object} via - port number that which port is command port of WSR device instance */
+        this.via = { udp: 0 };
+        /** @member {object} downstream - port number that which ports are downstream port from target device */
+        this.downstream = { udp: 0 };
+
+    }
+
+}
 
 class jtWebSockRepeater{
     constructor(args){
@@ -111,6 +142,7 @@ class jtWebSockRepeater{
                     this.log('commsock connection close');
                     if(this._device.socket){
                         this._device.socket.close();
+                        this._device.socket = null;
                     }
                     this._commServ.connected = false;
                 });
@@ -329,6 +361,7 @@ class jtWebSockRepeater{
                 let loop = true;
                 while(loop){
                     this.log((await this._wifi.connect(network)).msg);
+                    device.mac = this._wifi.connectionState.network.mac;
                     device.ip = this._wifi.connectionState.network.ip;
                     if(device.ip){
                         this.log('IP:', device.ip);
@@ -368,6 +401,7 @@ class jtWebSockRepeater{
                 await sleep.wait(5000, 10, async () => { return device.socket.ready; });
                 response.result = true;
                 response.message = 'ok';
+                this.log(device);
             }else{
                 this.log('devServ UDP datagram undefined');
                 return response;

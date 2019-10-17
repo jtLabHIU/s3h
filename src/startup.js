@@ -18,7 +18,6 @@ let repeater = null;
 // 
 if(!app.requestSingleInstanceLock()){
   console.log('WSR: already execute');
-  app.quit();
   app.terminating = true;
 }else{
   app.terminating = false;
@@ -56,7 +55,9 @@ app.on('ready', function() {
   mainWindow.loadURL('file://' + __dirname + '/index.html');
 
   mainWindow.on('closed', function() {
-    repeater.close();
+    if(repeater){
+      repeater.close();
+    }
     mainWindow = null;
     app.quit();
   });
@@ -76,22 +77,26 @@ app.on('ready', function() {
 
 if(!app.terminating){
   startCommServ();
+}
 
-  if(process.env.JTS3H_MODE_DEVSERV === undefined || process.env.JTS3H_MODE_DEVSERV.trim() != 'true'){
-    exec('cd', (error, stdout) => {
-      let pathAdd = '';
-      const path = stdout.split('\\');
-      if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
-        pathAdd = 'jtS3H-win32-x64\\';
+if(process.env.JTS3H_MODE_DEVSERV === undefined || process.env.JTS3H_MODE_DEVSERV.trim() != 'true'){
+  exec('cd', (error, stdout) => {
+    let pathAdd = '';
+    const path = stdout.split('\\');
+    if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
+      pathAdd = 'jtS3H-win32-x64\\';
+    }
+    exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
+      if(error){
+        console.log(error);
       }
-      exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
-        if(error){
-          console.log(error);
-        }
-      });
-      console.log('"' + pathAdd + 'win-unpacked\\Scratch Desktop.exe" was invoked as jtScratch');
     });
-  }else{
-    console.log('now waiting for connect jtScratch that running on webpack-dev-server');  
-  }
+    console.log('"' + pathAdd + 'win-unpacked\\Scratch Desktop.exe" was invoked as jtScratch');
+  });
+}else{
+  console.log('now waiting for connect jtScratch that running on webpack-dev-server');  
+}
+
+if(app.terminating){
+  app.quit();
 }
