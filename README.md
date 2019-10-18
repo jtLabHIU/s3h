@@ -141,6 +141,10 @@ scratch 1/2 helper compatible
 - devSock
     - Tello can't reconnect to another UDP port, such make it by 0
 
+- AP list auto-update on Windows
+    - use [WlanScan.exe](https://superuser.com/questions/889414/force-refresh-re-scan-wireless-networks-from-command-line)
+        - problem: it can't exit normaly
+
 -jtMesh
     - Mesh is based upon remote sensor connections through port 42001
     - `scratch-vm/src/engine/variables.js`

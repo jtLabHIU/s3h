@@ -27,33 +27,120 @@ const sleep = require('./jtSleep');
  */
 let packet = null;
 /**
- * - device class
- *  a device information and instance that connect to WSR
- * @member {string} name - device name
- * 
+ * @classdesc
+ * - Portal class:
+ *  a porting socket information and instance that communicate with WSR
  */
-class device{
+class Portal{
     /**
-     * @param {*} args 
+     * - WSRPortal:
+     *  protocol description that a WSRDevice will communicate through
+     * @typedef {object} WSRPortal
+     * @property {number|null} tcp - TCP port number (not implemented yet)
+     * @property {number|null} udp - UDP port number
+     * @property {number|null} ipc - IPC port number (not implemented yet)
+     * @property {string|null} http - HTTP 'host.domain:port/dir' string (not implemented yet)
+     * @property {string|null} websock - WebSocket 'host.domain:port/dir' string (not implemented yet)
+     */
+    /**
+     * @constructor
+     * @param {WSRPortal} args - WSRPortal argument
      */
     constructor(args){
-        /** @member {string} - device name */
+        /** @member {WSRPortal.tcp} tcp - TCP port number (not implemented yet) */
+        this.tcp = null;
+        if(args.tcp){
+            this.tcp = args.tcp;
+        }
+        /** @member {WSRPortal.udp} udp - UDP port number */
+        this.udp = null;
+        if(args.udp){
+            this.udp = args.udp;
+        }
+        /** @member {WSRPortal.ipc} ipc - IPC port number (not implemented yet) */
+        this.ipc = null;
+        if(args.ipc){
+            this.ipc = args.ipc;
+        }
+        /** @member {WSRPortal.http} http - HTTP 'host.domain:port/dir' string (not implemented yet) */
+        this.http = null;
+        if(args.http){
+            this.http = args.http;
+        }
+        /** @member {WSRPortal.websock} websock - WebSocket 'host.domain:port/dir' string (not implemented yet) */
+        this.websock = null;
+        if(args.websock){
+            this.websock = args.websock;
+        }
+        
+    }
+}
+
+/**
+ * @classdesc
+ * - Device class:
+ *  a device information and instance that connect to WSR
+ */
+class Device{
+    /**
+     * - WSRDevice:
+     *  a device information and instance that connect to WSR
+     * @typedef {object} WSRDevice
+     * @property {string} name - device name 
+     * @property {string|null} ssid - own SSID
+     * @property {string|null} mac - MAC address
+     * @property {string|null} ip - IP address
+     * @property {Portal} port - port number that which port is command port of target device
+     * @property {Portal} via - port number that which port is command port of WSR device instance
+     * @property {Portal[]} downstream - port number that which ports are downstream port from target device
+     * @property {Portal[]} upstream - port number that which ports are upstream port from target device
+     */
+    /**
+     * @constructor
+     * @param {WSRDevice} args - WSRDevice argument
+     */
+    constructor(args){
+        /** @member {WSRDevice.name} name - device name*/
         this.name = 'D2D555';
-        /** @member {string} ssid - SSID */
+        if(args.name){
+            this.name = args.name;
+        }
+        /** @member {WSRDevice.ssid} ssid - own SSID */
         this.ssid = 'TELLO-D2D555';
-        /** @member {string} mac - MAC address */
-        this.ssid = '60:60:1f:d2:d5:55';
+        if(args.ssid){
+            this.ssid = args.ssid;
+        }
+        /** @member {WSRDevice.mac} mac - MAC address */
+        this.mac = '60:60:1f:d2:d5:55';
+        if(args.mac){
+            this.mac = args.mac;
+        }
         /** @member {string} ip - IP address */
         this.ip = '192.168.10.1';
-        /** @member {object} port - port number that which port is command port of target device */
-        this.port = { udp: 8889 };
-        /** @member {object} via - port number that which port is command port of WSR device instance */
-        this.via = { udp: 0 };
-        /** @member {object} downstream - port number that which ports are downstream port from target device */
-        this.downstream = { udp: 0 };
-
+        if(args.ip){
+            this.ip = args.ip;
+        }
+        /** @member {Portal} port - port number that which port is command port of target device */
+        this.port = new Portal({ udp: 8889 });
+        if(args.port){
+            this.port = args.port;
+        }
+        /** @member {Portal} via - port number that which port is command port of WSR device instance */
+        this.via = new Portal({ udp: 0 });
+        if(args.via){
+            this.via = args.via;
+        }
+        /** @member {Portal[]} downstream - port number that which ports are downstream port from target device */
+        this.downstream = [new Portal({'udp':8890}), new Portal({'udp':11111})];
+        if(args.downstream){
+            this.downstream = args.downstream;
+        }
+        /** @member {Portal[]} upstream - port number that which ports are upstream port from target device */
+        this.upstream = [];
+        if(args.upstream){
+            this.upstream = args.upstream;
+        }
     }
-
 }
 
 class jtWebSockRepeater{
@@ -446,4 +533,6 @@ class jtWebSockRepeater{
 }
 
 module.exports = jtWebSockRepeater;
+module.exports.Portal = Portal;
+module.exports.Device = Device;
 
