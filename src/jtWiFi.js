@@ -2,7 +2,7 @@
  * @file synchronized WiFi manager
  *      jtWiFi.js
  * @module ./jtWiFi
- * @version 1.11.191004b
+ * @version 1.20.191018a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -17,7 +17,10 @@
 
 const wifi  = require('wifi-control');
 const arp = require('@network-utils/arp-lookup');
+const { exec } = require('child_process');
 const sleep = require('./jtSleep');
+
+const scanner = '.\\asset\\WlanScan.exe';
 
 /**
  * - Network:
@@ -202,6 +205,7 @@ class jtWiFi{
         let result = 0;
         let aplist = this._aplist;
         try{
+            exec(scanner, error => { /* do nothing */ });
             const response = await this.scanForWiFi_Promise();
             aplist.success = response.success;
             aplist.numofap = parseInt(response.msg.match(/\d+/));
@@ -221,6 +225,21 @@ class jtWiFi{
         return result;
     }
 
+    /**
+     * search the AP from this._apilist by SSID
+     * @param {string} ssid - SSID which is search for
+     * @returns {boolean} - search result
+     */
+    async search(ssid = null){
+        let result = false;
+        await this._aplist.networks.filter( (value, index, array) => {
+            if(value.ssid === ssid){
+                result = true;
+            }
+        });
+        return result;
+    }
+    
     /**
      * get Network object from SSID or MAC address
      * @param {string} ssidOrMac - SSID or MAC address
