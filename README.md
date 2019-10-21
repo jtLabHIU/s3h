@@ -145,7 +145,7 @@ scratch 1/2 helper compatible
     - use [WlanScan.exe](https://superuser.com/questions/889414/force-refresh-re-scan-wireless-networks-from-command-line)
         - problem: it can't exit normaly
 
--jtMesh
+- jtMesh
     - Mesh is based upon remote sensor connections through port 42001
     - `scratch-vm/src/engine/variables.js`
     - packet: <size: 4 bytes><msg: size bytes>
@@ -159,3 +159,4 @@ scratch 1/2 helper compatible
     - `broadcast "play note"`
     - [Scratch 2.0 Extension Protcol](https://en.scratch-wiki.info/w/images/ExtensionsDoc.HTTP-9-11.pdf)
 
+- jtDev

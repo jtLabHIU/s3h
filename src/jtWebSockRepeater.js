@@ -35,12 +35,16 @@ class Portal{
     /**
      * - WSRPortal:
      *  protocol description that a WSRDevice will communicate through
+     *                            commSock            portSock
+     * - Master(e.g. jtScratch) ---upstream---> WSR ---upstream---> Device
+     * - Master(e.g. jtScratch) <-downstream--- WSR <-downstream--- Device
      * @typedef {object} WSRPortal
-     * @property {number|null} tcp - TCP port number (not implemented yet)
-     * @property {number|null} udp - UDP port number
-     * @property {number|null} ipc - IPC port number (not implemented yet)
-     * @property {string|null} http - HTTP 'host.domain:port/dir' string (not implemented yet)
-     * @property {string|null} websock - WebSocket 'host.domain:port/dir' string (not implemented yet)
+     * @property {string} name - the unique ID of this portal
+     * @property {string} L12 - Layer1/2 type; ethernet/wlan/wlan_sta/bt/bt_pan/ble/serial/hardcode
+     * @property {string} L34 - Layer3/4 type; tcp/udp/ipc/ble/serial/hardcode
+     * @property {string} L567 - Layer5/6/7 type; binary/text/http/websock
+     * @property {string} host - device hostname/IP address/COM port/
+     * @property {string} mac - device MAC address/BD_ADDR
      */
     /**
      * @constructor
