@@ -63,6 +63,6 @@ typings/
 # WLANProfiles
 nodeWifiConnect.xml
 
-/src/test.js
+/src/test*.js
 /jtS3H-win32-x64
 /*.zip

@@ -9,19 +9,54 @@
  */
 
 const uuidv4 = require('uuid/v4');
+const sleep = require('./jtSleep');
 const _uuid = uuidv4();
+const _devices = [];
 
 class jtDevice{
-    constructor(argv){
-        this.uuid = uuidv4();
+    constructor(devType = '', argv = {}){
+        this._uuid = uuidv4();
+        this._devType = devType;
         if(argv){
 
         }
-
+        _devices.push(this);
     }
 
+    async init(argv = {}){
+        return false;
+    }
+
+    /**
+     * - get UUID of this host
+     * @static
+     * @returns {string} UUID of this host
+     */
     static get uuid(){
         return _uuid;
+    }
+
+    /**
+     * - get UUID of this device
+     * @return {string} UUID if this device
+     */
+    get uuid(){
+        return this._uuid;
+    }
+
+    static get devices(){
+        return _devices;
+    }
+
+    static getDeviceByUUID(uuid = null){
+        let result = null;
+        if(uuid){
+            const devices = _devices.filter( element => element.uuid == uuid);
+            if(devices.length){
+                result = devices[0];
+            }
+        }
+        return result;
     }
 
     //
@@ -61,5 +96,26 @@ jtDevice._objtrans_stringify   = jtDevice.NETAREA_DEVCLIENT;
  * @type {NETAREA}
  */
 jtDevice._objtrans_functionify = jtDevice.NETAREA_DEVSERV;
+
+/**
+ * - all devices of this host
+ * @type {jtDevice}
+ */
+jtDevice._devices = _devices;
+
+/**
+ * - sync/async sleep function (from jtSleep.js)
+  * @param {Number} ms - sleep time (milliseconds)
+ */
+jtDevice.sleep = sleep;
+/**
+ * - sync/async wait function (from jtSleep.js)
+ * @param {number} timeout - wait timeout (milliseconds) if 0, wait terminate condition
+ * @param {number} interval - condition check interval (milliseconds)
+ * @param {Function} funcCondition - conditional expression (resolver function)
+ * @param {Function} funcTerminate - call on timeout or terminater (resolver function)
+ * @returns {Promise<boolean>} - true: wait successed  - false: timeout or force terminated
+ */
+jtDevice.wait = sleep.waitPromise
 
 module.exports = jtDevice;

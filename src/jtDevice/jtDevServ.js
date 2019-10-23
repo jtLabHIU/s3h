@@ -1,5 +1,5 @@
 /**
- * @file jtDevice: device server
+ * @file jtDevice: server device
  *      jtDevServ.js
  * @module ./jtDevice/jtDevServ
  * @version 0.00.191021a
@@ -14,8 +14,10 @@ const Device = require('./jtDevice');
 class jtDevServ extends Device{
     constructor(){
         super();
-        this.uuid = Device.uuid;
+        this._uuid = Device.uuid;
     }
+
+    
 }
 
 module.exports = jtDevServ;
