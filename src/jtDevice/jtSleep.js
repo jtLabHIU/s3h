@@ -2,7 +2,7 @@
  * @file synchronous sleep and wait function
  *      jtSleep.js
  * @module ./jtSleep
- * @version 3.00.191023a
+ * @version 3.00.191023b
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -26,7 +26,7 @@ function jtSleep(ms){
  * @param {number} interval - condition check interval (milliseconds)
  * @param {Function} funcCondition - conditional expression (async function)
  * @param {Function} funcTerminate - call on timeout or terminater (async function)
- * @returns {boolean} - true: wait successed  false: timeout
+ * @returns {boolean} - true: wait successed  - false: timeout or force terminated
  */
 async function jtWait(
     timeout = 5000,
@@ -68,7 +68,7 @@ async function jtWait(
  * @param {number} interval - condition check interval (milliseconds)
  * @param {Function} funcCondition - conditional expression (resolver function)
  * @param {Function} funcTerminate - call on timeout or terminater (resolver function)
- * @returns {boolean} - true: wait successed  false: timeout
+ * @returns {Promise<boolean>} - true: wait successed  - false: timeout or force terminated
  */
 function jtWait_Promise(
     timeout = 5000,
@@ -136,6 +136,9 @@ function jtSleepWithPromiseSample(){
 }
 
 //usage: jtWait
+//       if you want to use jtWait_Promise with async/await,
+//       please change callback functions in arguments
+//       to `function(resolve){ resolve(result); }`
 let cond = false;
 let terminater = false;
 async function jtWaitSample(){
@@ -189,7 +192,7 @@ async function terminate(){
     terminater = true;
 }
 
-//usage: jtWait_Promise
+//usage: jtWait_Promise (full-Promisenized)
 cond = false;
 terminater = false;
 function jtWait_PromiseSample(){
