@@ -2,7 +2,7 @@
  * @file Super class of all jtDevices
  *      jtDevice.js
  * @module ./jtDevice/jtDevice
- * @version 0.00.191021a
+ * @version 0.00.191024a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -14,6 +14,11 @@ const _uuid = uuidv4();
 const _devices = [];
 
 class jtDevice{
+    /**
+     * # jtDevice
+     * @param {string} devType device type
+     * @param {object} argv arguments for device constructor(without .init)
+     */
     constructor(devType = '', argv = {}){
         this._uuid = uuidv4();
         this._devType = devType;
@@ -23,6 +28,13 @@ class jtDevice{
         _devices.push(this);
     }
 
+    /**
+     * - initializer:
+     * - is called automatically from jtDeviceFactory with await 
+     * @abstract
+     * @param {object} argv initialize arguments
+     * @returns {boolean} device initialization successed or failed 
+     */
     async init(argv = {}){
         return false;
     }
@@ -38,16 +50,55 @@ class jtDevice{
 
     /**
      * - get UUID of this device
-     * @return {string} UUID if this device
+     * @return {string} UUID of this device
      */
     get uuid(){
         return this._uuid;
     }
 
-    static get devices(){
-        return _devices;
+    /**
+     * - get type of this device
+     * @return {string} type of this device
+     */
+    get devType(){
+        return this._devType;
     }
 
+    /**
+     * - list of current device types
+     * @returns {string[]} current device types
+     */
+    static getDevTypes(){
+        let result = [];
+        _devices.forEach( element => {
+            result.push(element.devType);
+        });
+        return result;        
+    }
+
+    /**
+     * check current device type name
+     * @param {string} devType - device type name
+     * @returns {boolean} available or unavailable
+     */
+    static hasDevType(devType = null){
+        let result = false;
+        const devTypes = jtDevice.getDevTypes();
+        if(devType){
+            _devices.forEach( element => {
+                if(element == devType){
+                    result = true;
+                }
+            });
+        }
+        return result;
+    }
+
+    /**
+     * - get device by UUID
+     * @param {string} uuid device UUID
+     * @returns {jtDevice} device object
+     */
     static getDeviceByUUID(uuid = null){
         let result = null;
         if(uuid){
@@ -55,6 +106,24 @@ class jtDevice{
             if(devices.length){
                 result = devices[0];
             }
+        }
+        return result;
+    }
+
+    /**
+     * - get devices by device type
+     * @param {string} devType device type
+     * @returns {jtDevice[]} device objects
+     */
+    static getDevicesByDevType(devType = null){
+        let result = null;
+        if(devType){
+            const devices = _devices.filter( element => element.devType == devType);
+            if(devices.length){
+                result = devices[0];
+            }
+        }else{
+            result = _devices;
         }
         return result;
     }

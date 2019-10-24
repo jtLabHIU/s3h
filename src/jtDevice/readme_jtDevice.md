@@ -3,8 +3,10 @@
 
 ## What is jtDevice
 
-- all classes must extend the `jtDevice` class
-- all objects on the same host must be created and managed with the same `jtDevServ`
+- all classes (without `jtDevicefactory`) must extend the `jtDevice` class
+- all objects on the same host must be hosted by the same `jtDevice` class
+- all objects on the same host must be created by the same `jtDeviceFactory` class
+- all objects on the same host must be managed by the same instance of `jtDevServ` device
 - all objects must be communicated with the `jtDevServ` through a instance of `jtPortal`
 - all objects must be under controlled by the `jtDevMaster`
     - please remember a `jtDevServ` must be not only SERVER for clients but also SERVANT of the `jtDevMaster`

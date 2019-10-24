@@ -17,8 +17,9 @@ const DevTypeList = {
 class jtDeviceFactory{
     /**
      * - create a jtDevice
-     * @param {DevTypeList} devType - one of Object.keys(DevTypeList)
-     * @param {object} argv - arguments for device constructor
+     * @param {string} devType - one of Object.keys(DevTypeList)
+     * @param {object} argv - arguments for device constructor and .init for initializer
+     * @param {object} argv.init - arguments for device initializer
      * @returns {boolean|string} - jtDevice UUID or false
      */
     static async create(devType = null, argv = {}){
@@ -39,10 +40,10 @@ class jtDeviceFactory{
     }
 
     /**
-     * - list of device type
+     * - list of device types
      * @returns {string[]} device types
      */
-    static getDeviceTypes(){
+    static getDevTypes(){
         return Object.keys(DevTypeList);
     }
 
@@ -51,7 +52,7 @@ class jtDeviceFactory{
      * @param {string} devType - device type name
      * @returns {boolean} available or unavailable
      */
-    static hasDeviceType(devType = null){
+    static hasDevType(devType = null){
         let result = false;
         if(devType && DevTypeList[devType] !== undefined){
             result = true;
