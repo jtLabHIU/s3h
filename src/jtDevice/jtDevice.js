@@ -23,7 +23,9 @@ class jtDevice{
         this._uuid = uuidv4();
         this._devType = devType;
         if(argv){
-
+            if(argv.default === true){
+                
+            }
         }
         _devices.push(this);
     }
@@ -116,16 +118,17 @@ class jtDevice{
      * @returns {jtDevice[]} device objects
      */
     static getDevicesByDevType(devType = null){
-        let result = null;
+        let result = [];
         if(devType){
-            const devices = _devices.filter( element => element.devType == devType);
-            if(devices.length){
-                result = devices[0];
-            }
-        }else{
-            result = _devices;
+            result = _devices.filter( element => element.devType == devType);
         }
         return result;
+    }
+
+    log(arg, ...args){
+        if(getDevicesByDevType('logger').length){
+
+        }
     }
 
     //

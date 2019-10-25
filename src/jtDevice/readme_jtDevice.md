@@ -13,3 +13,9 @@
 - all objects are able to serialize by JSON stringify/functionify and send to or receive from everywhere
     - for security reasons, the `jtDevMaster` must allow administrators to control such object transfer activity
     - yep we can't make security perfect, we just aim to *NOT BE EASILY* abused
+
+## devType
+
+- server
+- logger
+- networkInterface
