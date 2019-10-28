@@ -19,3 +19,320 @@
 - server
 - logger
 - networkInterface
+
+## Portal
+- Tello
+    - command, AP mode
+        - upperLayer:
+            - protocol: 'request'
+            - over: null
+            - type: 'linebreak'
+            - endpoint: null
+        - middleLayer:
+            - protocol: 'internet'
+            - type: 'udp'
+            - family: 'ipv4'
+            - upstream:
+                - name: 'D2D555'
+                - address: '192.168.10.1'
+                - port: 8889
+                - exclusive: true
+            - downstream:
+                - name: 'COMNPC-123'
+                - address: '192.168.10.2'
+                - port: 0
+                - exclusive: true
+            - via: null
+        - lowerLayer:
+            - protocol: 'wifi'
+            - type: 'ap'
+            - encryption:
+                - type: 'none'
+                - pass: null
+            - family: 'mac'
+            - upstream:
+                - name: 'TELLO-D2D555'
+                - address: '60:60:1F:D2:D5:55'
+            - downstream:
+                - name: 'COMNPC-123'
+                - address: 'f8:63:3f:e4:55:e8'
+            - via: null
+    - command, STA mode
+        - upperLayer:
+            - protocol: 'request'
+            - over: null
+            - type: 'linebreak'
+            - endpoint: null
+        - middleLayer:
+            - protocol: 'internet'
+            - type: 'udp'
+            - family: 'ipv4'
+            - upstream:
+                - name: 'D2D555'
+                - address: '192.168.10.3'
+                - port: 8889
+                - exclusive: true
+            - downstream:
+                - name: 'COMNPC-123'
+                - address: '192.168.10.2'
+                - port: 0
+                - exclusive: true
+            - via:
+                - protocol: 'wifi'
+                - name: 'ETROBO'
+                - address: '192.168.10.1'
+                - port: 0
+                - exclusive: false
+        - lowerLayer:
+            - protocol: 'ethernet'
+            - type: 'wifista'
+            - encryption:
+                - type: null
+                - pass: null
+            - family: 'mac'
+            - upstream
+                - name: 'TELLO-D2D555'
+                - address: '60:60:1F:D2:D5:55'
+            - downstream
+                - name: 'COMNPC-123'
+                - address: 'f8:63:3f:e4:55:e8'
+            - via:
+                - protocol: 'wifi'
+                - name: 'ETROBO'
+                - encryption:
+                    - type: 'wpa2'
+                    - pass: 'etrobocon_hkd' 
+                - address: '[MAC_ADDRESS]'
+    - status
+        - upperLayer:
+            - protocol: 'downstream'
+            - over: null
+            - type: 'linebreak'
+            - endpoint: null
+        - middleLayer:
+            - protocol: 'internet'
+            - type: 'udp'
+            - family: 'ipv4'
+            - upstream: null
+            - downstream:
+                - name: 'COMNPC-123'
+                - address: '192.168.10.2'
+                - port: 8890
+                - exclusive: true
+            - via: null
+        - lowerLayer:
+            - protocol: 'wifi'
+            - type: 'ap'
+            - encryption:
+                - type: 'none'
+                - pass: null
+            - family: 'mac'
+            - upstream:
+                - name: 'TELLO-D2D555'
+                - address: '60:60:1F:D2:D5:55'
+            - downstream:
+                - name: 'COMNPC-123'
+                - address: 'f8:63:3f:e4:55:e8'
+            - via: null
+    - video
+        - upperLayer:
+            - protocol: 'downstream'
+            - over: null
+            - type: 'binary'
+            - endpoint: null
+        - middleLayer:
+            - protocol: 'internet'
+            - type: 'udp'
+            - family: 'ipv4'
+            - upstream: null
+            - downstream:
+                - name: 'COMNPC-123'
+                - address: '192.168.10.2'
+                - port: 11111
+                - exclusive: true
+            - via: null
+        - lowerLayer:
+            - protocol: 'wifi'
+            - type: 'ap'
+            - encryption:
+                - type: 'none'
+                - pass: null
+            - family: 'mac'
+            - upstream:
+                - name: 'TELLO-D2D555'
+                - address: '60:60:1F:D2:D5:55'
+            - downstream:
+                - name: 'COMNPC-123'
+                - address: 'f8:63:3f:e4:55:e8'
+            - via: null
+- client
+    - Scrach3_local
+        - upperLayer:
+            - protocol: 'client'
+            - over: 'websocket'
+            - type: 'json-rpc'
+            - endpoint: 's3h'
+        - middleLayer:
+            - protocol: 'internet'
+            - type: 'tcp'
+            - family: 'ipv4'
+            - upstream:
+                - name: '[CLIENT_UUID]'
+                - address: '127.0.0.1'
+                - port: [CLIENT_PORT]
+                - exclusive: true
+            - downstream:
+                - name: 'localhost'
+                - address: '127.0.0.1'
+                - port: 5963
+                - exclusive: false
+            - via: null
+        - lowerLayer:
+            - protocol: 'ethernet'
+            - type: 'loopback'
+            - encryption:
+                - type: null
+                - pass: null
+            - family: 'uuid'
+            - upstream:
+                name: '[CLIENT_UUID]'
+                address: '[CLIENT_UUID]'
+            - downstream:
+                name: '[SERVER_UUID]'
+                address: '[SERVER_UUID]'
+    - Scrach3_remote
+        - upperLayer:
+            - protocol: 'client'
+            - over: 'websocket'
+            - type: 'json-rpc'
+            - endpoint: 's3h'
+        - middleLayer:
+            - protocol: 'internet'
+            - type: 'tcp'
+            - family: 'ipv4'
+            - upstream:
+                - name: '[CLIENT_HOSTNAME]'
+                - address: '[CLIENT_IP]'
+                - port: [CLIENT_PORT]
+                - exclusive: true
+            - downstream:
+                - name: 'COMNPC-123'
+                - address: '[SERVER_IP]'
+                - port: 5963
+                - exclusive: false
+            - via: null
+        - lowerLayer:
+            - protocol: 'ethernet'
+            - type: 'wan'
+            - encryption:
+                - type: null
+                - pass: null
+            - family: 'mac'
+            - upstream:
+                - name: '[CLIENT_HOSTNAME]'
+                - address: '[CLIENT_MAC]'
+            - downstream:
+                name: '[SERVER_HOSTNAME]'
+                address: '[SERVER_MAC]'
+    - Scrach2_Extension
+        - upperLayer:
+            - protocol: 'client'
+            - over: 'http'
+            - type: 'linebreak'
+            - endpoint: null
+        - middleLayer:
+            - protocol: 'internet'
+            - type: 'tcp'
+            - family: 'ipv4'
+            - upstream:
+                - name: '[CLIENT_HOSTNAME]'
+                - address: '[CLIENT_IP]'
+                - port: [CLIENT_PORT]
+                - exclusive: true
+            - downstream:
+                - name: 'COMNPC-123'
+                - address: '[SERVER_IP]'
+                - port: 42002
+                - exclusive: false
+            - via: null
+        - lowerLayer:
+            - protocol: 'ethernet'
+            - type: 'wan'
+            - encryption:
+                - type: null
+                - pass: null
+            - family: 'mac'
+            - upstream:
+                - name: '[CLIENT_HOSTNAME]'
+                - address: '[CLIENT_MAC]'
+            - downstream:
+                name: '[SERVER_HOSTNAME]'
+                address: '[SERVER_MAC]'
+    - Scrach1_Mesh_Client
+        - upperLayer:
+            - protocol: 'updownstream'
+            - over: null
+            - type: 'linebreak'
+            - endpoint: null
+        - middleLayer:
+            - protocol: 'internet'
+            - type: 'tcp'
+            - family: 'ipv4'
+            - upstream:
+                - name: '[CLIENT_HOSTNAME]'
+                - address: '[CLIENT_IP]'
+                - port: 42001
+                - exclusive: false
+            - downstream:
+                - name: 'COMNPC-123'
+                - address: '[SERVER_IP]'
+                - port: 0
+                - exclusive: true
+            - via: null
+        - lowerLayer:
+            - protocol: 'ethernet'
+            - type: 'wan'
+            - encryption:
+                - type: null
+                - pass: null
+            - family: 'mac'
+            - upstream:
+                - name: '[CLIENT_HOSTNAME]'
+                - address: '[CLIENT_MAC]'
+            - downstream:
+                name: '[SERVER_HOSTNAME]'
+                address: '[SERVER_MAC]'
+    - Scrach1_Mesh_Server
+        - upperLayer:
+            - protocol: 'updownstream'
+            - over: null
+            - type: 'linebreak'
+            - endpoint: null
+        - middleLayer:
+            - protocol: 'internet'
+            - type: 'tcp'
+            - family: 'ipv4'
+            - upstream:
+                - name: '[CLIENT_HOSTNAME]'
+                - address: '[CLIENT_IP]'
+                - port: 0
+                - exclusive: true
+            - downstream:
+                - name: 'COMNPC-123'
+                - address: '[SERVER_IP]'
+                - port: 42001
+                - exclusive: false
+            - via: null
+        - lowerLayer:
+            - protocol: 'ethernet'
+            - type: 'wan'
+            - encryption:
+                - type: null
+                - pass: null
+            - family: 'mac'
+            - upstream:
+                - name: '[CLIENT_HOSTNAME]'
+                - address: '[CLIENT_MAC]'
+            - downstream:
+                name: '[SERVER_HOSTNAME]'
+                address: '[SERVER_MAC]'
