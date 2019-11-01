@@ -62,7 +62,8 @@ typings/
 
 # WLANProfiles
 nodeWifiConnect.xml
-
+/opencv4nodejs
 /src/test*.js
 /jtS3H-win32-x64
+/ffmpeg-*
 /*.zip

@@ -65,7 +65,7 @@ from [Scratch Wiki](https://ja.scratch-wiki.info/wiki/Scratch_3.0%E3%81%AE%E6%8B
 - put image files into `scratch-gui/src/lib/libraries/extensions`
     - 600x372 and 80x80
 - edit `scratch-gui/src/lib/libraries/extensions/index.jsx`
-    - import image files and add export default dection
+    - import image files and add export default section
 
 ## to scratch-vm
 

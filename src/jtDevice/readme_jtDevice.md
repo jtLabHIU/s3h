@@ -24,9 +24,9 @@
 - Tello
     - command, AP mode
         - upperLayer:
-            - protocol: 'request'
-            - over: null
+            - protocol: 'text'
             - type: 'linebreak'
+            - stream: 'request'
             - endpoint: null
         - middleLayer:
             - protocol: 'internet'
@@ -59,9 +59,9 @@
             - via: null
     - command, STA mode
         - upperLayer:
-            - protocol: 'request'
-            - over: null
+            - protocol: 'text'
             - type: 'linebreak'
+            - stream: 'request'
             - endpoint: null
         - middleLayer:
             - protocol: 'internet'
@@ -105,9 +105,9 @@
                 - address: '[MAC_ADDRESS]'
     - status
         - upperLayer:
-            - protocol: 'downstream'
-            - over: null
+            - protocol: 'text'
             - type: 'linebreak'
+            - stream: 'down'
             - endpoint: null
         - middleLayer:
             - protocol: 'internet'
@@ -134,11 +134,11 @@
                 - name: 'COMNPC-123'
                 - address: 'f8:63:3f:e4:55:e8'
             - via: null
-    - video
+    - video(H.264 over RTP on UDP6038)
         - upperLayer:
-            - protocol: 'downstream'
-            - over: null
-            - type: 'binary'
+            - protocol: 'binary'
+            - type: 'linebreak'
+            - stream: 'request'
             - endpoint: null
         - middleLayer:
             - protocol: 'internet'
@@ -168,7 +168,7 @@
 - client
     - Scrach3_local
         - upperLayer:
-            - protocol: 'client'
+            - protocol: 'response'
             - over: 'websocket'
             - type: 'json-rpc'
             - endpoint: 's3h'
@@ -202,7 +202,7 @@
                 address: '[SERVER_UUID]'
     - Scrach3_remote
         - upperLayer:
-            - protocol: 'client'
+            - protocol: 'response'
             - over: 'websocket'
             - type: 'json-rpc'
             - endpoint: 's3h'
@@ -236,7 +236,7 @@
                 address: '[SERVER_MAC]'
     - Scrach2_Extension
         - upperLayer:
-            - protocol: 'client'
+            - protocol: 'response'
             - over: 'http'
             - type: 'linebreak'
             - endpoint: null

@@ -159,4 +159,49 @@ scratch 1/2 helper compatible
     - `broadcast "play note"`
     - [Scratch 2.0 Extension Protcol](https://en.scratch-wiki.info/w/images/ExtensionsDoc.HTTP-9-11.pdf)
 
-- jtDev
+- Scratch3 /broadcast
+    - broadcast(args, util) and broadcastAndWait(args, util) are defined in `scratch-vm/src/blocks/scratch3_event.js`
+        - `args`:object
+            - BROADCAST_OPTION
+                - id: uid
+                - name: message
+        - `util`:BlockUtility   (engine/block-utility.js)
+            - sequencer:Sequencer
+            - thread:Thread
+            - __proto__
+                - target: this.thread.target: Target (engine/target.js)
+                - startHats('event_whenbroadcastreceived', {BROADCAST_OPTION: broadcastOption});
+                    - calls sequencer.runtime.startHats (engine/runtime.js)
+- Scratch3 /sensorupdate
+    - variable blocks are defined in `scratch-vm/src/blocks/scratch3_data.js`
+
+
+## road to opencv
+
+- download [cmake-3.16.0-rc2-win64-x64.zip](https://github.com/Kitware/CMake/releases/download/v3.16.0-rc2/cmake-3.16.0-rc2-win64-x64.zip) or latest one from [CMake website](https://cmake.org/download/)
+- deflate into `$Pzenbu\cmake`
+- open an **administrative Powershell** when you want to use `node-gyp` on Windows
+- `Set-Item Env:Pzenbu "path\to\$Pzenbu"`
+- `Set-Item Env:PATH "$Env:Pzenbu\node.js;$Env:Pzenbu\cmake\bin;$Env:PATH"`
+- `cd path\to\your\workspace`
+- `npm install -g windows-build-tools`
+    - try `npm config get python` to check
+- `npm install -g node-gyp`
+- add entry into `package.json`
+```
+  ,
+  "opencv4nodejs": {
+    "autoBuildOpencvVersion": "4.1.1"
+  }
+```
+- `npm install --save opencv4nodejs`
+- `git clone https://github.com/justadudewhohacks/opencv4nodejs.git`
+
+
+- ToDo: electorn-rebuild
+    - `cd ..`
+    - `git clone https://github.com/justadudewhohacks/opencv-electron.git`
+    - `cd opencv-electron/plain-js`
+    - `npm install`
+
+`.\ffmpeg -i udp://0.0.0.0:11111 -f sdl "tello"`

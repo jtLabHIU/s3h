@@ -18,7 +18,7 @@
 const wifi  = require('wifi-control');
 const arp = require('@network-utils/arp-lookup');
 const { exec } = require('child_process');
-const sleep = require('./jtSleep');
+const sleep = require('./jtDevice/jtSleep');
 
 const scanner = '.\\asset\\WlanScan.exe';
 
