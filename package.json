@@ -26,8 +26,10 @@
     "electron-packager": "^14.0.6"
   },
   "dependencies": {
+    "@abandonware/noble": "^1.9.2-5",
     "@network-utils/arp-lookup": "^1.0.4",
     "minilog": "^3.1.0",
+    "node-fetch": "^2.6.0",
     "opencv4nodejs": "^5.4.0",
     "uuid": "^3.3.3",
     "wifi-control": "^2.0.1",

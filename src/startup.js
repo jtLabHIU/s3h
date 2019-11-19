@@ -8,7 +8,7 @@
  */
 
 const {app, BrowserWindow, Menu, Tray} = require('electron');
-const sleep = require('./jtSleep');
+const sleep = require('./jtDevice/jtSleep');
 const WSR = require('./jtWebSockRepeater');
 const { exec } = require('child_process');
 let mainWindow = null;

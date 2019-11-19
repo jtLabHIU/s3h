@@ -12,7 +12,7 @@ const ws = require('ws');
 const net = require('net');
 const dgram = require('dgram');
 const wifi = require('./jtWiFi');
-const sleep = require('./jtSleep');
+const sleep = require('./jtDevice/jtSleep');
 
 /**
  * - WSRPacket:
