@@ -178,7 +178,9 @@ scratch 1/2 helper compatible
 
 ## road to opencv
 
-- download [cmake-3.16.0-rc2-win64-x64.zip](https://github.com/Kitware/CMake/releases/download/v3.16.0-rc2/cmake-3.16.0-rc2-win64-x64.zip) or latest one from [CMake website](https://cmake.org/download/)
+### for windows:
+
+- download [cmake-3.16.0-rc4-win64-x64.zip](https://github.com/Kitware/CMake/releases/download/v3.16.0-rc2/cmake-3.16.0-rc2-win64-x64.zip) or latest one from [CMake website](https://cmake.org/download/)
 - deflate into `$Pzenbu\cmake`
 - open an **administrative Powershell** when you want to use `node-gyp` on Windows
 - `Set-Item Env:Pzenbu "path\to\$Pzenbu"`
@@ -186,6 +188,19 @@ scratch 1/2 helper compatible
 - `cd path\to\your\workspace`
 - `npm install -g windows-build-tools`
     - try `npm config get python` to check
+
+### for mac
+
+- download [cmake-3.16.0-rc4-Darwin-x86_64.dmg](https://github.com/Kitware/CMake/releases/download/v3.16.0-rc4/cmake-3.16.0-rc4-Darwin-x86_64.dmg) or latest one from [CMake website](https://cmake.org/download/)
+- execute this file to mount as installer
+- select `agree` button
+- drag-and-drop `CMake` icon into `$Pzenbu`
+- open the `Terminal`
+- `Pzenbu="path/to/$Pzenbu"`
+- `PATH="$Pzenbu/CMake.app/Contents/bin:$PATH"`
+
+### for common
+
 - `npm install -g node-gyp`
 - add entry into `package.json`
 ```

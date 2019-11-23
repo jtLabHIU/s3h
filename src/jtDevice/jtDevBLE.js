@@ -8,7 +8,7 @@
  * @copyright (C) 2019 jtLab, Hokkaido Information University
  */
 const dummy = null;
-const noble = require('@abandonware/noble');
+//const noble = require('@abandonware/noble');
 const http = require('http');
 const url = require('url');
 const path = require('path');
@@ -633,9 +633,30 @@ class Characteristic{
         case 'sint128':
             result = this._readBigIntLE(data, 16);
             break;
+        case 'float32':
+            result = data.readFloatLE();
+            break;
+        case 'float64':
+            result = data.readDoubleLE();
+            break;
+        case 'duint16':
+            result = [];
+            result.push(data.readUInt16LE(0));
+            result.push(data.readUInt16LE(2));
+            break;
+        case 'utf16s':
+            result = data.toString('utf16le');
+            break;
         case 'utf8s':
+        case 'SFLOAT':
+        case 'FLOAT':
+        case 'characteristics':
+        case 'struct':
+        case 'reg-cert-data-list':
+        case 'gatt_uuid':
+        case 'variable':
         default:
-            result = data.toString('utf-8');
+            result = data.toString('utf8');
             break;
         }
         return result;
@@ -650,6 +671,7 @@ class Characteristic{
     encodeFormats(data, format){
         let result = null;
         let bits = null;
+        let byte = 0;
         switch(format){
         case 'boolean':
             if(data){
@@ -659,104 +681,136 @@ class Characteristic{
             }
             break;
         case '2bit':
-            result = [];
-            bits = this.decodeFormats(data, 'uint8');
-            result.push(Boolean(bits     & 0x01));
-            result.push(Boolean(bits>>>1 & 0x01));
-            break;
         case '4bit':
         case 'nible':
-            result = [];
-            bits = this.decodeFormats(data, 'uint8');
-            for (let index = 0; index < 4; index++) {
-                result.push(Boolean(bits>>>index & 0x01));
-            }
-            break;
         case '8bit':
-            result = [];
-            bits = this.decodeFormats(data, 'uint8');
-            for (let index = 0; index < 8; index++) {
-                result.push(Boolean(bits>>>index & 0x01));
+            bits = data.concat(0,0,0,0,0,0,0,0);
+            for (let index = 7; index >=0 ; index--) {
+                byte = (byte<<1)|(bits[index]&0x01);
             }
+            result = Buffer.from([byte]);
             break;
         case '16bit':
-            result = [];
-            bits = this.decodeFormats(data, 'uint16');
-            for (let index = 0; index < 16; index++) {
-                result.push(Boolean(bits>>>index & 0x01));
+            result = Buffer.allocUnsafe(2);
+            for(let index=0; index<2; index++){
+                bits = data.slice(index*8, index*8+8);
+                result[index] = this.encodeFormats(bits, '8bit')[0];
             }
             break;
         case '24bit':
-            result = [];
-            bits = this.decodeFormats(data, 'uint24');
-            for (let index = 0; index < 24; index++) {
-                result.push(Boolean(bits>>>index & 0x01));
+            result = Buffer.allocUnsafe(3);
+            for(let index=0; index<3; index++){
+                bits = data.slice(index*8, index*8+8);
+                result[index] = this.encodeFormats(bits, '8bit')[0];
             }
             break;
         case '32bit':
-            result = [];
-            bits = this.decodeFormats(data, 'uint24');
-            for (let index = 0; index < 32; index++) {
-                result.push(Boolean(bits>>>index & 0x01));
+            result = Buffer.allocUnsafe(4);
+            for(let index=0; index<4; index++){
+                bits = data.slice(index*8, index*8+8);
+                result[index] = this.encodeFormats(bits, '8bit')[0];
             }
             break;
         case 'uint8':
-            result = data.readUInt8();
+            result = Buffer.allocUnsafe(1);
+            result.writeUInt8(data&0xFF);
             break;
         case 'uint8[]':
-            result = Array.from(data);
+            result = Buffer.allocUnsafe(data.length);
+            for(let index=0;index<data.length;index++){
+                result.writeUInt8(data[index]&0xFF, index);
+            }
             break;
         case 'uint12':
-            result = data.readUInt16LE() & 0x0FFF;
+            result = Buffer.allocUnsafe(2);
+            result.writeUInt16LE(data&0xFFF);
             break;
         case 'uint16':
-            result = data.readUInt16LE();
+            result = Buffer.allocUnsafe(2);
+            result.writeUInt16LE(data);
             break;
         case 'uint24':
-            result = data.readUIntLE(0, 3);
+            result = Buffer.allocUnsafe(3);
+            result.writeUIntLE(data, 0, 3);
             break;
         case 'uint32':
-            result = data.readUInt32LE();
+            result = Buffer.allocUnsafe(4);
+            result.writeUInt32LE(data);
             break;
         case 'uint40':
-            result = data.readUIntLE(0, 5);
+            result = Buffer.allocUnsafe(5);
+            result.writeUIntLE(data, 0, 5);
             break;
         case 'uint48':
-            result = data.readUIntLE(0, 6);
+            result = Buffer.allocUnsafe(6);
+            result.writeUIntLE(data, 0, 6);
             break;
         case 'uint64':
-            result = this._readBigUIntLE(data, 8);
+            result = this._writeBigUIntLE(data, 8);
             break;
         case 'uint128':
-            result = this._readBigUIntLE(data, 16);
+            result = this._writeBigUIntLE(data, 16);
             break;
         case 'sint8':
-            result = data.readInt8();
+            result = Buffer.allocUnsafe(1);
+            result.writeInt8(data&0xFF);
             break;
         case 'sint12':
-            result = data.readInt16LE() & 0x0FFF;
+            result = Buffer.allocUnsafe(2);
+            result.writeInt16LE(data&0xFFF);
             break;
         case 'sint16':
-            result = data.readInt16LE();
+            result = Buffer.allocUnsafe(2);
+            result.writeInt16LE(data);
             break;
         case 'sint24':
-            result = data.readIntLE(0, 3);
+            result = Buffer.allocUnsafe(3);
+            result.writeIntLE(data, 0, 3);
             break;
         case 'sint32':
-            result = data.readInt32LE();
+            result = Buffer.allocUnsafe(4);
+            result.writeInt32LE(data);
             break;
         case 'sint48':
-            result = data.readIntLE(0, 6);
+            result = Buffer.allocUnsafe(6);
+            result.writeIntLE(data, 0, 6);
             break;
         case 'sint64':
-            result = this._readBigIntLE(data, 8);
+            result = this._writeBigIntLE(data, 8);
             break;
         case 'sint128':
-            result = this._readBigIntLE(data, 16);
+            result = this._writeBigIntLE(data, 16);
+            break;
+        case 'float32':
+            result = Buffer.allocUnsafe(4);
+            result.writeFloatLE(data);
+            break;
+        case 'float64':
+            result = Buffer.allocUnsafe(8);
+            result.writeDoubleLE(data);
+            break;
+        case 'SFLOAT':
+            break;
+        case 'FLOAT':
+            break;
+        case 'duint16':
+            result = Buffer.allocUnsafe(4);
+            result.writeUInt16LE(data[0],0);
+            result.writeUInt16LE(data[1],2);
+            break;
+        case 'utf16s':
+            result = Buffer.from(data,'utf16le');
             break;
         case 'utf8s':
+        case 'SFLOAT':
+        case 'FLOAT':
+        case 'characteristics':
+        case 'struct':
+        case 'reg-cert-data-list':
+        case 'gatt_uuid':
+        case 'variable':
         default:
-            result = data.toString('utf-8');
+            result = Buffer.from(data,'utf8');
             break;
         }
         return result;
@@ -766,6 +820,7 @@ class Characteristic{
      * convert Buffer to Hex String
      * @param {Buffer} data 
      * @param {number} byteLength 
+     * @returns {string}
      */
     _readHexLE(data, byteLength){
         let result = '0x';
@@ -775,6 +830,31 @@ class Characteristic{
             }else{
                 result += data[i].toString(16).padStart(2, '0');
             }
+        }
+        return result;
+    }
+
+    /**
+     * convert Hex String to Buffer
+     * @param {string} data 
+     * @param {number} byteLength
+     * @returns {Buffer} 
+     */
+    _writeHexLE(data, byteLength){
+        const result = Buffer.alloc(byteLength);
+        let index = 0;
+        let byte = '';
+        for(let pos=data.length-1;pos>1;pos--){
+            if(index<byteLength){
+                byte = data.substr(pos, 1) + byte;
+                if(byte.length == 2){
+                    result.writeUInt8(parseInt('0x' + byte), index++);
+                    byte = '';
+                }
+            }
+        }
+        if(byte.length == 1){
+            result.writeUInt8(parseInt('0x' + byte), index);
         }
         return result;
     }
@@ -805,7 +885,8 @@ class Characteristic{
     /**
      * read signed BigInt from Buffer
      * @param {Buffer} data 
-     * @param {number} byteLength 
+     * @param {number} byteLength
+     * @returns {BigInt}
      */
     _readBigIntLE(data, byteLength){
         let result = BigInt(0);
@@ -819,12 +900,46 @@ class Characteristic{
     }
 
     /**
+     * write Buffer from signed BigInt
+     * @param {BigInt} data 
+     * @param {number} byteLength
+     * @returns {Buffer} 
+     */
+    _writeBigIntLE(data, byteLength){
+        let result = null;
+        let hexString = data.toString(16);
+        let sign = false;
+        if(hexString.substr(0,1) === '-'){
+            hexString = hexString.substr(1);
+            sign = true;
+        }
+        result = this._writeHexLE('0x' + hexString, byteLength);
+        if(sign){
+            result[byteLength-1] = result[byteLength-1] & 0x7F;
+            this._2ComplementLE(result, byteLength);
+        }
+
+        return result;
+    }
+
+    /**
      * read unsigned BigInt from Buffer
      * @param {Buffer} data 
      * @param {number} byteLength 
+     * @returns {BigInt}
      */
     _readBigUIntLE(data, byteLength){
         return BigInt(this._readHexLE(data, byteLength));
+    }
+
+    /**
+     * write Buffer from unsigned BigInt
+     * @param {BigInt} data 
+     * @param {number} byteLength
+     * @returns {Buffer} 
+     */
+    _writeBigUIntLE(data, byteLength){
+        return this._writeHexLE('0x' + data.toString(16), byteLength);
     }
 }
 
@@ -835,8 +950,39 @@ async function test(){
     //const microbit = new jtDevBLE();
     //console.log('test:', jtDevBLE.getServiceProfileFromName('deviceInformation'));
     const chara = new Characteristic();
-    console.log(chara.encodeFormats(true, 'boolean'));
-    console.log(chara.encodeFormats(false, 'boolean'));
+
+    let buff = chara.encodeFormats([0x1111, 0x2222], 'duint16');
+    console.log(buff);
+    console.log(chara.decodeFormats(buff, 'duint16')[0].toString(16));
+
+    const ab = new ArrayBuffer(8);
+    const dv = new DataView(ab);
+    dv.setUint8(0, 1);
+    dv.setUint8(1, 2);
+    dv.setUint8(2, 3);
+    dv.setUint8(3, 4);
+    dv.setUint8(4, 5);
+    dv.setUint8(5, 6);
+    dv.setUint8(6, 7);
+    dv.setUint8(7, 8);
+    console.log(dv.getUint8(0));
+    console.log(dv.getUint8(1));
+    console.log(dv.getUint8(2));
+    console.log(dv.getUint8(3));
+    console.log(dv.getFloat64(0, true));
+
+    buff = Buffer.from([1,2,3,4,5,6,7,8]);
+    console.log(buff.readDoubleLE());
+    const dataView = new DataView(buff.buffer);
+    console.log(buff);
+    console.log(buff.buffer);
+    console.log(dataView);
+    console.log(dataView.getUint8(0));
+    console.log(dataView.getUint8(1));
+    console.log(dataView.getUint8(2));
+    console.log(dataView.getUint8(3));
+    console.log(dataView.getFloat32(0, true));
+
 
     //    while(true){
 //        const result = await microbit.read('magnetometerBearing');
