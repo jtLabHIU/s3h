@@ -2,12 +2,15 @@
  * @file jtDevice: Bluetooth Low Energy
  *      jtDevBLE.js
  * @module ./jtDevice/jtDevBLE
- * @version 0.00.191116a
+ * @version 0.00.191125a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
  */
 const dummy = null;
+
+const targetID = 'zetit';   // red with Makeblock_LE001b10642e71
+
 const noble = require('@abandonware/noble');
 const REST = require('./jtDevREST');
 const sleep = require('./jtSleep');
@@ -874,7 +877,7 @@ const _GATT_PROFILE = {
                         'read': 'mandatory',
                         'notify': 'mandatory',
                         fields: {
-                            'temperatrure': 'sint8'
+                            'temperature': 'sint8'
                         }
                     },
                     /**
@@ -957,7 +960,7 @@ class jtDevBLE{
         this._services = {};
         this._characteristics = {};
         this._data = {};
-        this._rest = new REST(4989, '/microbit');
+        this._rest = new REST(4989, '/jtDev/microbit/target');
 
         this._chara = new Characteristic();
 
@@ -1662,8 +1665,8 @@ class Characteristic{
 module.exports = jtDevBLE;
 module.exports.Characteristic = Characteristic;
 
-//async function test(){
-//    const microbit = new jtDevBLE('BBC micro:bit [zetit]');
+async function test(){
+    const microbit = new jtDevBLE(`BBC micro:bit [${targetID}]`);
 
 
     //    while(true){
@@ -1677,5 +1680,5 @@ module.exports.Characteristic = Characteristic;
 //        const result = await microbit.read('buttonAState');
 //        await sleep(500);
 //    }
-//}
-//test();
+}
+test();

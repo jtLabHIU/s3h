@@ -5,10 +5,7 @@
   "main": "./src/startup.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "set JTS3H_MODE_DEVSERV= && npx electron .",
-    "devserv": "set JTS3H_MODE_DEVSERV=true && npx electron .",
-    "dist": "bash ./build.command",
-    "electron-rebuild": "electron-rebuild -w opencv4nodejs"
+    "dist": "bash ./build.command"
   },
   "repository": {
     "type": "git",
@@ -21,21 +18,11 @@
     "url": "https://github.com/jtLabHIU/s3h/issues"
   },
   "homepage": "https://github.com/jtLabHIU/s3h#readme",
-  "devDependencies": {
-    "electron": "^6.0.12",
-    "electron-packager": "^14.0.6"
-  },
   "dependencies": {
     "@abandonware/noble": "^1.9.2-5",
     "@network-utils/arp-lookup": "^1.0.4",
-    "minilog": "^3.1.0",
     "node-fetch": "^2.6.0",
-    "opencv4nodejs": "^5.4.0",
     "uuid": "^3.3.3",
-    "wifi-control": "^2.0.1",
     "ws": "^7.1.2"
-  },
-  "opencv4nodejs": {
-    "autoBuildOpencvVersion": "4.1.1"
   }
 }
