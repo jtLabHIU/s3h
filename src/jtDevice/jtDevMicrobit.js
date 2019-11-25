@@ -941,21 +941,6 @@ const _GATT_PROFILE = {
     }
 }
 
-/**
- * GATT schema - formats
- * @see http://schemas.bluetooth.org/Documents/formats.xsd
- */
-const _GATT_FORMATS = [
-    '16bit',
-    'utf8s',
-    'uint8',
-    'uint8[]',
-    'uint16',
-    'uint24',
-    'sint8',
-    'sint16'
-]
-
 class jtDevMicrobit{
     constructor(){
         this._target = null;
