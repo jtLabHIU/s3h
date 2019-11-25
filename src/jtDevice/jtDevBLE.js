@@ -9,7 +9,9 @@
  */
 const dummy = null;
 
-const targetID = 'zetit';   // red with Makeblock_LE001b10642e71
+//const targetID = 'zetit';   // red with Makeblock_LE001b10642e71
+//const targetID = 'zetit';   // red with Makeblock_LE001b10642e71
+const targetID = 'getap';   // blue with Makeblock_LE001b10642e59
 
 const noble = require('@abandonware/noble');
 const REST = require('./jtDevREST');
