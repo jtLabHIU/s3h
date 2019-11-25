@@ -7,9 +7,12 @@
  * @copyright (C) 2019 jtLab, Hokkaido Information University
  */
 
+const target = 'BBC micro:bit [zetit]';           // mblock mod
+
 const {app, BrowserWindow, Menu, Tray} = require('electron');
 const sleep = require('./jtDevice/jtSleep');
-const WSR = require('./jtWebSockRepeater');
+//const WSR = require('./jtWebSockRepeater');     // mBlock mod
+const microbit = require('./jtDevice/jtDevBLE')   // mBlock mod
 const { exec } = require('child_process');
 let mainWindow = null;
 let tray = null;
@@ -24,6 +27,8 @@ if(!app.requestSingleInstanceLock()){
 }
 
 async function startCommServ(){
+  repeater = new microbit(target);        // mBlock mod
+/*                                        // mBlock mod
   repeater = new WSR({portComm:5963});
   repeater.addDeviceInfo(
       {
@@ -38,6 +43,7 @@ async function startCommServ(){
   );
   repeater.init();
   return;
+*/
 }
 
 app.on('window-all-closed', () => {});
@@ -79,6 +85,7 @@ if(!app.terminating){
   startCommServ();
 }
 
+/*                                                                                                    // mBlock mod
 if(process.env.JTS3H_MODE_DEVSERV === undefined || process.env.JTS3H_MODE_DEVSERV.trim() != 'true'){
   exec('cd', (error, stdout) => {
     let pathAdd = '';
@@ -96,6 +103,7 @@ if(process.env.JTS3H_MODE_DEVSERV === undefined || process.env.JTS3H_MODE_DEVSER
 }else{
   console.log('now waiting for connect jtScratch that running on webpack-dev-server');  
 }
+*/
 
 if(app.terminating){
   app.quit();

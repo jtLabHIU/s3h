@@ -1126,6 +1126,10 @@ class jtDevBLE{
         });
     }
 
+    close(){
+        // do nothing yet
+    }
+
     async read(characteristic, query){
         if(this._characteristics.hasOwnProperty(characteristic)){
             return new Promise( (resolve, reject) => {
@@ -1658,8 +1662,8 @@ class Characteristic{
 module.exports = jtDevBLE;
 module.exports.Characteristic = Characteristic;
 
-async function test(){
-    const microbit = new jtDevBLE('BBC micro:bit [zetit]');
+//async function test(){
+//    const microbit = new jtDevBLE('BBC micro:bit [zetit]');
 
 
     //    while(true){
@@ -1673,5 +1677,5 @@ async function test(){
 //        const result = await microbit.read('buttonAState');
 //        await sleep(500);
 //    }
-}
-test();
+//}
+//test();
