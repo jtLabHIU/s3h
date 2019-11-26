@@ -2,7 +2,7 @@
  * @file jtDevice: Bluetooth Low Energy
  *      jtDevBLE.js
  * @module ./jtDevice/jtDevBLE
- * @version 0.00.191125a
+ * @version 0.00.191126b
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -10,8 +10,8 @@
 const dummy = null;
 
 //const targetID = 'zetit';   // red with Makeblock_LE001b10642e71
-//const targetID = 'zetit';   // red with Makeblock_LE001b10642e71
 const targetID = 'getap';   // blue with Makeblock_LE001b10642e59
+//const targetID = 'pizig';   // green with Makeblock_LE001b10642e71
 
 const noble = require('@abandonware/noble');
 const REST = require('./jtDevREST');
