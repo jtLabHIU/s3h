@@ -8,6 +8,7 @@
  * @copyright (C) 2019 jtLab, Hokkaido Information University
  */
 
+const iconv = require('iconv-lite');
 const ws = require('ws');
 const net = require('net');
 const dgram = require('dgram');
@@ -76,7 +77,6 @@ class Portal{
         if(args.websock){
             this.websock = args.websock;
         }
-        
     }
 }
 
@@ -180,6 +180,10 @@ class jtWebSockRepeater{
         this._commServ = null;
 
         this._watchdogTerminater = false;
+
+        this._mesh = {};
+        this._mesh.sock = null;
+        this._mesh.input = [];
     }
 
     addDeviceInfo(device){
@@ -210,6 +214,7 @@ class jtWebSockRepeater{
             this._commServ.on('connection', (sock) => {
                 this.log('commServ accept client');
                 this._commServ.connected = true;
+                this._commServ.sock = sock;
 
                 sock.on('message', (message) => {
                     this.log('commSock accept message');
@@ -310,6 +315,8 @@ class jtWebSockRepeater{
                     this.sendCommandAsync(req);
                     response.result = true;
                     response.message = 'broadcast as async'
+                } else if(req.type == 'mesh'){
+                    response = await this.execMeshCommand(req);
                 } else {
                     response = await this.execModuleCommand(req);
                 }
@@ -356,6 +363,10 @@ class jtWebSockRepeater{
                 response.result = false;
                 response.message = 'recv from device: response timeout'
             }else{
+                if(req.command === 'command' && response.message !== 'ok'){
+                    this.log('binary mode stream detected: skip');
+                    response.message = await this.popResponse(this._device.socket);
+                }
                 response.result = true;
                 this.log('recv from device:', response.message);
             }
@@ -408,6 +419,95 @@ class jtWebSockRepeater{
             response.result = true;
             response.message = 'OK';
         }
+        return response;
+    }
+
+    async execMeshCommand(req){
+        let response = req;
+        response.result = false;
+        response.message = 'not understand';
+
+        const commands = req.command.split(' ');
+        const command = commands[0];
+
+        if(command == 'terminate'){
+            response.result = true;
+            response.message = 'OK';
+        }else if(command == 'connect'){
+            this.log('execMeshCommand: connect invoked');
+            if(commands.length>1){
+                response = await this.connectToMesh(response, commands[1]);
+            }else{
+                response = await this.connectToMesh(response);
+            }
+        }else{
+            const buf = Buffer.allocUnsafe(command.length+16);
+            buf.writeInt32BE(command.length+12);
+            buf.write('broadcast "' + command + '"', 4);
+            this.log(buf);
+            if(this._mesh.sock){
+                this.log(await this._mesh.sock.write(buf));
+                response.result = true;
+                response.message = 'Broadcasted: ' + command;
+            }else{
+                response.message = 'Scratch MESH disconnected.';
+            }
+        }
+
+        return response;
+    }
+
+    /**
+     * Connect to Scratch MESH network
+     * and define with Scratch Remote Sensors Protocol 
+     */
+    async connectToMesh(response, host = 'localhost'){
+        this._mesh.sock = await net.createConnection( { host: host, port: 42001 } );
+        //this._mesh.sock.setNoDelay();
+        this._mesh.sock.on('connect', () => { this.log('connected to Scratch MESH host:', host) });
+        this._mesh.sock.on('close', () => { this.log('Scratch MESH connection closed.')});
+        this._mesh.sock.on('data', (data) => {
+            const len = data.readInt32BE();
+            let params = data.toString('utf8', 4, len+4).split(' ');
+            const messageType = params.shift().toLowerCase();
+            while(params.length>0 && params[0].length>0){
+                this.log(params.length, params[0], params[0].length);
+                let key = params.shift();
+                if(key.slice(0, 1) === '"'){
+                    if(key.slice(-1) === '"'){
+                        key = key.slice(1, key.length-1);
+                    }else{
+                        this.log('invalid Remote Sensors Protocol key')
+                    }
+                }
+
+                let value = null;
+                if(params.length>0){
+                    value = params.shift();
+                    if(value.slice(0, 1) === '"'){
+                        if(value.slice(-1) === '"'){
+                            value = value.slice(1, value.length-1);
+                        }else{
+                            this.log('invalid Remote Sensors Protocol value');
+                        }
+                    }
+                }
+
+                const sender = JSON.stringify({
+                    'commID': -1,
+                    'result': true,
+                    'message': messageType,
+                    'key': key,
+                    'value': value
+                });
+                if(!this._watchdogTerminater && this._commServ.connected){
+                    const res = this._commServ.sock.send(sender);
+                }
+            }
+        });
+        response.result = true;
+        response.message = 'ok'
+
         return response;
     }
 
