@@ -14,6 +14,7 @@ const net = require('net');
 const dgram = require('dgram');
 const wifi = require('./jtWiFi');
 const sleep = require('./jtDevice/jtSleep');
+const { exec } = require('child_process');
 
 /**
  * - WSRPacket:
@@ -173,6 +174,13 @@ class jtWebSockRepeater{
             this._portComm = args.portComm;
         }
 
+        /** Tello status downstream port
+         *  @type {number} _portStatus */
+        this._portStatus = 8890;
+        if(args.portStatus){
+            this._portStatus = args.portStatus;
+        }
+
         this._msgIDCount = 0;
         this._requestQue = [];
         this._responseQue = [];
@@ -307,9 +315,9 @@ class jtWebSockRepeater{
                 if(req.type == 'sync'){
                     response = await this.sendCommand(req);
                 } else if(req.type == 'async'){
-                    this.sendCommandAsync(req);
-                    response.result = true;
-                    response.message = 'send as async'
+                    response = await this.sendCommandAsync(req);
+                } else if(req.type == 'tellostatus'){
+                    response = await this.respondStatusCommand(req);
                 } else if(req.type == 'broadcast'){
                     this.execModuleCommand(req);
                     this.sendCommandAsync(req);
@@ -366,7 +374,22 @@ class jtWebSockRepeater{
                 if(req.command === 'command' && response.message !== 'ok'){
                     this.log('binary mode stream detected: skip');
                     response.message = await this.popResponse(this._device.socket);
+                } else if(req.command === 'streamon' && response.message === 'ok'){
+                    exec('cd', (error, stdout) => {
+                        let pathAdd = '';
+                        const path = stdout.split('\\');
+                        if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
+                          pathAdd = 'jtS3H-win32-x64\\';
+                        }
+                        exec('".\\' + pathAdd + 'asset\\ffplay" -probesize 32 -i udp://0.0.0.0:11111 -framerate 30', (error) => {
+                          if(error){
+                            console.log(error);
+                          }
+                        });
+                        console.log('".\\' + pathAdd + 'asset\\ffplay" -probesize 32 -i udp://0.0.0.0:11111 -framerate 30 was invoked as Stream Viewer');
+                      });
                 }
+
                 response.result = true;
                 this.log('recv from device:', response.message);
             }
@@ -379,8 +402,39 @@ class jtWebSockRepeater{
 
     async sendCommandAsync(req){
         let response = req;
-        response.result = false;
-        response.message = 'not implement';
+        const message = Buffer.from(req.command);
+        this.log('send to device as async:', req.command);
+        try{
+            await this._device.socket.send(message, 0, message.length,
+                this._device.port.udp, this._device.ip,
+                function(err){
+                    if(err){
+                        throw err;
+                    }
+                }
+            );
+            response.result = true;
+            response.message = 'sent as async'
+        }catch(e){
+            this.log('device command send error');
+            response.result = false;
+            response.message = 'device command send error';
+        }
+        return response;
+    }
+
+    async respondStatusCommand(req){
+        let response = req;
+        const param = Buffer.from(req.command);
+        if(this._device.status.status[param] !== undefined){
+            this.log('status requested: ' + param + ' = ' + this._device.status.status[param]);
+            response.result = true;
+            response.message = this._device.status.status[param];
+        }else{
+            this.log('status ' + param + ': not found');
+            response.result = false;
+            response.message = 'not available';
+        }
         return response;
     }
 
@@ -571,13 +625,14 @@ class jtWebSockRepeater{
 
             // make socket
             if(typeof device.via.udp !== 'undefined'){
+                //devSock
                 device.socket = dgram.createSocket('udp4');
                 device.socket.responseQue = [];
 
                 device.socket.on(
                     'message', (msg, rinfo) => {
                         //ToDo: rinfo back {address,family,port,size} from sender device
-                        this.log('devSock onMessage:', msg);
+                        //this.log('devSock onMessage:', msg);
                         device.socket.responseQue.push(msg.toString());
                     }
                 );
@@ -590,9 +645,39 @@ class jtWebSockRepeater{
                 );
                 device.socket.bind(device.via.udp);
                 await sleep.wait(5000, 10, async () => { return device.socket.ready; });
+
+                //devStatus
+                device.status = dgram.createSocket('udp4');
+                device.status.status = {};
+
+                device.status.on(
+                    'message', (msg, rinfo) => {
+                        //ToDo: rinfo back {address,family,port,size} from sender device
+                        //this.log('devStatus onMessage:', msg);
+                        //device.status.responseQue.push(msg.toString());
+                        const status = msg.toString().split(';');
+                        for(let i=0; i<status.length; i++){
+                            const data = status[i].split(':');
+                            if(data[1] !== undefined){
+                                device.status.status[data[0]] = parseInt(data[1]);
+                            }
+                        }
+                        //this.log(device.status.status);
+                    }
+                );
+                device.status.on(
+                    'listening', () => {
+                        const address = device.status.address();
+                        this.log(`devStatus is listening at ${address.address}:${address.port}`);
+                        device.status.ready = true;
+                    }
+                );
+                device.status.bind(device.downstream[0].udp);
+                await sleep.wait(5000, 10, async () => { return device.status.ready; });
+
                 response.result = true;
                 response.message = 'ok';
-                this.log(device);
+                //this.log(device);
             }else{
                 this.log('devServ UDP datagram undefined');
                 return response;
