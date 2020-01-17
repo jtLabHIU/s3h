@@ -30,7 +30,7 @@ async function startCommServ(){
           'name': 'D2D555',
           'ssid': 'TELLO-D2D555',
           'mac': 'D2D555',
-          'ip': '192.168.10.1',
+          'ip': '',   //192.168.10.1
           'port': {'udp':8889},
           'via': {'udp':8889},
           'downstream': [{'udp':8890}, {'udp':11111}]

@@ -2,7 +2,7 @@
  * @file Synchronized WebSocket repeater to native socket
  *      jtWebSockRepeater.js
  * @module ./jtWebSockRepeater
- * @version 1.00.191011b
+ * @version 2.00.200115a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -121,7 +121,7 @@ class Device{
             this.mac = args.mac;
         }
         /** @member {string} ip - IP address */
-        this.ip = '192.168.10.1';
+        this.ip = ''; //192.168.10.1
         if(args.ip){
             this.ip = args.ip;
         }
@@ -156,7 +156,7 @@ class jtWebSockRepeater{
             'name': 'D2D555',
             'ssid': 'TELLO-D2D555',
             'mac': 'D2D555',
-            'ip': '192.168.10.1',
+            'ip': '',   // 192.168.10.1
             'port': {'udp':8889},
             'via': {'udp':0},
             'downstream': [{'udp':8890}, {'udp':11111}]

@@ -2,7 +2,7 @@
  * @file synchronized WiFi manager
  *      jtWiFi.js
  * @module ./jtWiFi
- * @version 1.20.191018a
+ * @version 1.21.200115a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -100,7 +100,7 @@ class jtWiFi{
                     ip: null
                 }
             ],
-            msg: 'before scan'
+            msg: 'not scanned yet'
         };
 
         /**
@@ -110,7 +110,7 @@ class jtWiFi{
         this._ifaceState = _ifaceState
         this._ifaceState = {
             success: false,
-            msg: 'before connect',
+            msg: 'not connected yet',
             network: {
                 ssid: null,
                 mac: null
