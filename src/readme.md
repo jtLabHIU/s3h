@@ -70,3 +70,15 @@
     - add [package] to `externals` division of `webpack.config.js`
     - `npm run build`
     - restart `scratch-gui` webpack-dev-server if compile error is occured 
+
+## readyState
+- _commServ.connected
+- _device.socket.ready
+- _device.status.ready
+- _wifi.connectionState.connected
+
+- commServ
+    - jtWebSockRepeater._commServ
+        - construct ... null
+        - init() ... _commServ.connected true/false
+    

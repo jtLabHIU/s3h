@@ -2,7 +2,7 @@
  * @file Synchronized WebSocket repeater to native socket
  *      jtWebSockRepeater.js
  * @module ./jtWebSockRepeater
- * @version 2.00.200115a
+ * @version 2.01.200121a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -158,14 +158,14 @@ class jtWebSockRepeater{
             'mac': 'D2D555',
             'ip': '',   // 192.168.10.1
             'port': {'udp':8889},
-            'via': {'udp':0},
+            'via': {'udp':8889},
             'downstream': [{'udp':8890}, {'udp':11111}]
         }];
         if(args.devices){
             this._devices = args.devices;
         }
 
-        this._device = null;
+        this._device = { 'name': null };
 
         /** WebSocket up/downstream port
          *  @type {number} _portComm */
@@ -194,14 +194,28 @@ class jtWebSockRepeater{
         this._mesh.input = [];
     }
 
-    addDeviceInfo(device){
-        this.removeDeviceInfo(device.name);
-        this._devices.push(device);
-        this._device = device;
+    addDeviceInfo(device, overWrite = false){
+        const target = this._devices.find( value => (value.name == device.name));
+
+        if(!target || overWrite){
+            if(overWrite){
+                this.log('addDeviceInfo: over write');
+                removeDeviceInfo(device.name);
+            }
+            this.log('addDeviceInfo: new device');
+            this._devices.push(device);
+            this._device = this._devices[this._devices.length-1];
+        }else{
+            this.log('addDeviceInfo: already exists');
+            this._device = target;
+        }
     }
 
     removeDeviceInfo(name){
         let result = false;
+        if(this._device.name == name){
+            this._device = { 'name': null };
+        }
         this._devices.filter( (value, index, array) => {
             if(value.name === name){
                 array.splice(index, 1);
@@ -246,7 +260,11 @@ class jtWebSockRepeater{
                     this.log('commsock connection close');
                     if(this._device.socket){
                         this._device.socket.close();
-                        this._device.socket = null;
+                        this._device.socket = undefined;
+                    }
+                    if(this._device.status){
+                        this._device.status.close();
+                        this._device.status = undefined;
                     }
                     this._commServ.connected = false;
                 });
@@ -341,11 +359,22 @@ class jtWebSockRepeater{
         }
     }
 
-    stop(){
+    async stop(){
         this._watchdogTerminater = true;
         try{
-            this._device.socket.close();
-            this._wifi.disconnect();
+            this.log('sock close:');
+            await this._device.socket.disconnect();
+            this.log('socket disconnect:');
+            await this._device.socket.close();
+            this.log('socket close:');
+            await this._device.status.disconnect();
+            this.log('status disconnect:');
+            await this._device.status.close();
+            this.log('status close:');
+            await this._wifi.disconnect();
+            this.log('all sockets are disconnected.');
+            this._device.socket = undefined;
+            this._device.status = undefined;
         }catch(maleCatch){}
     }
 
@@ -355,25 +384,26 @@ class jtWebSockRepeater{
 
     async sendCommand(req){
         let response = req;
+        const device = this._device;
         const message = Buffer.from(req.command);
         this.log('send to device:', req.command);
         try{
-            await this._device.socket.send(message, 0, message.length,
-                this._device.port.udp, this._device.ip,
+            await device.socket.send(message, 0, message.length,
+                device.port.udp, device.ip,
                 function(err){
                     if(err){
                         throw err;
                     }
                 }
             );
-            response.message = await this.popResponse(this._device.socket);
-            if(response.message === false){
+            response.message = await this.popResponse(device.socket);
+            if(response === false){
                 response.result = false;
                 response.message = 'recv from device: response timeout'
             }else{
                 if(req.command === 'command' && response.message !== 'ok'){
                     this.log('binary mode stream detected: skip');
-                    response.message = await this.popResponse(this._device.socket);
+                    response.message = await this.popResponse(device.socket);
                 } else if(req.command === 'streamon' && response.message === 'ok'){
                     exec('cd', (error, stdout) => {
                         let pathAdd = '';
@@ -402,11 +432,12 @@ class jtWebSockRepeater{
 
     async sendCommandAsync(req){
         let response = req;
+        const device = this._device;
         const message = Buffer.from(req.command);
         this.log('send to device as async:', req.command);
         try{
-            await this._device.socket.send(message, 0, message.length,
-                this._device.port.udp, this._device.ip,
+            await device.socket.send(message, 0, message.length,
+                device.port.udp, device.ip,
                 function(err){
                     if(err){
                         throw err;
@@ -425,11 +456,12 @@ class jtWebSockRepeater{
 
     async respondStatusCommand(req){
         let response = req;
+        const device = this._device;
         const param = Buffer.from(req.command);
-        if(this._device.status.status[param] !== undefined){
-            this.log('status requested: ' + param + ' = ' + this._device.status.status[param]);
+        if(device.status.status[param] !== undefined){
+            this.log('status requested: ' + param + ' = ' + device.status.status[param]);
             response.result = true;
-            response.message = this._device.status.status[param];
+            response.message = device.status.status[param];
         }else{
             this.log('status ' + param + ': not found');
             response.result = false;
@@ -566,31 +598,27 @@ class jtWebSockRepeater{
     }
 
     async connect(response, deviceName = null){
-        let device = null;
+        let device = this._device;
         let count = 0;
 
-        if(this._device.connected){
-            this.stop();
-            this.start();
-        }
+        this.log('start connect sequence');
 
-        if(deviceName){
+        if(deviceName && deviceName != device.name){
             device = this._devices.find( value => (value.name == deviceName));
-        }else{
-            if(this._device){
-                device = this._device;
-            }else if(this._devices.length){
-                device = this._devices[0];
+            if(device){
+                this.log('switch to new device info:');
+                this._device = device;
             }else{
-                device = {
-                    'ssid': null
-                }
+                response.message = 'device info: ' + deviceName + ' not found';
+                return response;
             }
+        }else{
+            this.log('reuse device info:', device);
         }
-        this._device = device;
 
         // connect WiFi direct
-        if(device.ssid){
+        if(device.ssid && !this._wifi.connectionState.connected){
+            this.log('tring to establish wifi connection.');
             // init WiFi
             if(count = await this._wifi.init(false)){
                 this.log('WiFi found ' + count + ' APs');
@@ -622,10 +650,22 @@ class jtWebSockRepeater{
                 response.message = 'WiFi direct connect: ' + device.ssid + ' not found';
                 return response;
             }
+        }else{
+            this.log('wifi connection is already established.');
+        }
 
-            // make socket
+        // make socket
+        if(device.socket === undefined || device.socket.ready === undefined || !device.socket.ready){
+            this.log('device.socket === undefined:', device.socket === undefined);
+            if(device.socket){
+                this.log('device.socket.ready === undefined:', device.socket.ready === undefined);
+                if(device.socket.ready){
+                    this.log('!device.socket.ready:', !device.socket.ready);
+                }
+            }
+            this.log('tring to establish devSock.');
             if(typeof device.via.udp !== 'undefined'){
-                //devSock
+            //devSock
                 device.socket = dgram.createSocket('udp4');
                 device.socket.responseQue = [];
 
@@ -682,7 +722,10 @@ class jtWebSockRepeater{
                 this.log('devServ UDP datagram undefined');
                 return response;
             }
-            this._device = device;
+        }else{
+            this.log('device sockets are already established.');
+            response.result = true;
+            response.message = 'ok';
         }
         return response;
     }
