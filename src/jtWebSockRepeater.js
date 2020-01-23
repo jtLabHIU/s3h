@@ -2,7 +2,7 @@
  * @file Synchronized WebSocket repeater to native socket
  *      jtWebSockRepeater.js
  * @module ./jtWebSockRepeater
- * @version 2.01.200121a
+ * @version 2.01.200122a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -22,7 +22,8 @@ const { exec } = require('child_process');
  * @typedef {object} WSRPacket
  * @property {number} msgID - auto increment number in the order received by repeater
  * @property {number} commID - sequential number that is assigned by client
- * @property {string} type - command type (module/sync/async/broadcast)
+ * @property {string} target - command target ([module]/client/tello/mesh)
+ * @property {string} type - command type ([sync]/async/status/notify/broadcast)
  * @property {string} command - command string
  * @property {boolean} result - whether command execution was successful
  * @property {string} message - response message
@@ -239,22 +240,29 @@ class jtWebSockRepeater{
                 this._commServ.sock = sock;
 
                 sock.on('message', (message) => {
-                    this.log('commSock accept message');
                     const temp = message.split(':');
-                    let command = temp[2];
-                    let counter = 3;
+                    let command = temp[3];
+                    let counter = 4;
                     while((temp.length)>counter){
                         command = command + ':' + temp[counter++]
                     }
-                    this._requestQue.push({
+                    const request = {
                         'msgID': this._msgIDCount++,
                         'commID': temp[0],
-                        'type': temp[1],
+                        'target': temp[1],
+                        'type': temp[2],
                         'command': command,
                         'result': false,
                         'message': 'not execute yet',
                         'sock': sock
-                    });
+                    };
+                    if(request.type != 'async' && request.type != 'broadcast'){
+                        this.log('commSock accept a sequential command:', request.target, request.type, request.command);
+                        this._requestQue.push(request);
+                    }else{
+                        this.log('commSock accept an immediate command:', request.target, request.type, request.command);
+                        this.handleCommands(request);
+                    }
                 });
                 sock.on('close', () => {
                     this.log('commsock connection close');
@@ -277,9 +285,10 @@ class jtWebSockRepeater{
             this._commServ.on('close', () => {
                 this._commServ.readyState = ws.CLOSING;
                 this.log('commServ is closing');
-                this._requestQue.push({
+                this.handleCommands({
                     'msgID': this._msgIDCount++,
                     'commID': -5963,
+                    'target': 'module',
                     'type': 'broadcast',
                     'command': 'terminate',
                     'result': false,
@@ -324,42 +333,91 @@ class jtWebSockRepeater{
         });
     }
 
+    /**
+     * reject all requests in requestQue
+     */
+    async rejectRequests(){
+        let response = {};
+        while(this._requestQue.length){
+            response = this.request;
+            response.result = false;
+            response.message = 'command rejected';
+            const sender = await this.sendResponse(response);
+            this.log('request rejected:', sender);
+        }
+        return true;
+    }
+
+    /**
+     * send response to client
+     * @param {WSRPacket} request
+     * @returns {string} - JSON stringified response
+     */
+    async sendResponse(response){
+        const sender = JSON.stringify({
+            'commID': parseInt(response.commID),
+            'result': response.result,
+            'message': response.message
+        });
+        if(this._commServ.connected){
+            const res = response.sock.send(sender);
+        }
+        return sender;
+    }
+
+    /**
+     * command handler
+     * @param {WSRPacket} request
+     */
+    async handleCommands(request){
+        this.log('handleCommand:', request.command);
+        let response = request;
+        // command for client
+        if(request.target == 'client'){
+            response.commID = 0;
+            response.type = 'notify'
+        // command for tello
+        }else if(request.target == 'tello'){
+            if(request.type == 'async'){
+                response = await this.sendCommandAsync(request);
+            }else if(request.type == 'status'){
+                response = await this.respondStatusCommand(request);
+            }else{
+                response = await this.sendCommand(request);
+            }
+        // command for Mesh
+        } else if(request.target == 'mesh'){
+            response = await this.execMeshCommand(request);
+        // broadcast
+        //} else if(request.type == 'broadcast'){
+        //    this.execModuleCommand(request);
+        //    response.result = true;
+        //    response.message = 'broadcast as async'
+        // command for this module
+        } else {
+            response = await this.execModuleCommand(request);
+        }
+        const sender = await this.sendResponse(response);
+        this.log('request finish:', sender);
+    }
+
+    /**
+     * start command sequencer (for not 'async' or not 'broadcast' type commands)
+     */
     async start(){
         this._watchdogTerminater = false;
         while(await this.waitRequest()){
             if(this._commServ.connected){
-                const req = this.request;
-                let response = req;
-                if(req.type == 'sync'){
-                    response = await this.sendCommand(req);
-                } else if(req.type == 'async'){
-                    response = await this.sendCommandAsync(req);
-                } else if(req.type == 'tellostatus'){
-                    response = await this.respondStatusCommand(req);
-                } else if(req.type == 'broadcast'){
-                    this.execModuleCommand(req);
-                    this.sendCommandAsync(req);
-                    response.result = true;
-                    response.message = 'broadcast as async'
-                } else if(req.type == 'mesh'){
-                    response = await this.execMeshCommand(req);
-                } else {
-                    response = await this.execModuleCommand(req);
-                }
-                const sender = JSON.stringify({
-                    'commID': parseInt(response.commID),
-                    'result': response.result,
-                    'message': response.message
-                });
-                if(!this._watchdogTerminater && this._commServ.connected){
-                    const res = response.sock.send(sender);
-                }    
-                this.log('request finish:', sender);
+                await this.handleCommands(this.request);
             }
         }
     }
 
+    /** 
+     * stop command sequencer
+     */
     async stop(){
+        await this.rejectRequests();
         this._watchdogTerminater = true;
         try{
             this.log('sock close:');
@@ -397,13 +455,17 @@ class jtWebSockRepeater{
                 }
             );
             response.message = await this.popResponse(device.socket);
-            if(response === false){
+            if(response.message === false){
                 response.result = false;
                 response.message = 'recv from device: response timeout'
             }else{
                 if(req.command === 'command' && response.message !== 'ok'){
                     this.log('binary mode stream detected: skip');
                     response.message = await this.popResponse(device.socket);
+                    if(response.message === false){
+                        response.result = false;
+                        response.message = 'recv from device: response timeout'
+                    }
                 } else if(req.command === 'streamon' && response.message === 'ok'){
                     exec('cd', (error, stdout) => {
                         let pathAdd = '';
@@ -488,6 +550,16 @@ class jtWebSockRepeater{
             }else{
                 response = await this.connect(response);
             }
+        }else if(command == 'reset'){
+            this.log('execModuleCommand: reset invoked');
+            this._watchdogTerminater = true;
+            await this.rejectRequests();
+            await sleep(500);
+            this._watchdogTerminater = false;
+            this.start();
+            response.result = false;
+            response.message = 'done'
+            this.log('execModuleCommand: reset done');
         }else if(command == 'popResponse'){
             this.log('execModuleCommand: pop response');
             response.result = true;
@@ -613,7 +685,7 @@ class jtWebSockRepeater{
                 return response;
             }
         }else{
-            this.log('reuse device info:', device);
+            this.log('reuse device info.');
         }
 
         // connect WiFi direct
@@ -645,6 +717,16 @@ class jtWebSockRepeater{
                         response.message = 'WiFi direct connect: ' + device.ssid + ' not found';
                         return response;
                     }
+                    this._wifi.event.once('disconnected', () => {
+                        this.log('WiFi disconnected.');
+                        this.handleCommands({
+                            'commID': 0,
+                            'target': 'client',
+                            'type': 'notify',
+                            'result': false,
+                            'message': 'WiFi disconnected'
+                        });
+                    });
                 }
             }else{
                 response.message = 'WiFi direct connect: ' + device.ssid + ' not found';

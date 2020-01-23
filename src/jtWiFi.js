@@ -19,6 +19,7 @@ const wifi  = require('wifi-control');
 const arp = require('@network-utils/arp-lookup');
 const { exec } = require('child_process');
 const sleep = require('./jtDevice/jtSleep');
+const EventEmitter = require('events').EventEmitter;
 
 const scanner = '.\\asset\\WlanScan.exe';
 
@@ -45,6 +46,7 @@ const scanner = '.\\asset\\WlanScan.exe';
  * @type {APList}
  */
 let _aplist = {};
+
 
 /**
  * - ConnectionState:
@@ -119,6 +121,8 @@ class jtWiFi{
             connection: 'disconnected',
             power: false
         };
+
+        this.event = new EventEmitter;
     }
 
     /**
@@ -284,8 +288,12 @@ class jtWiFi{
 
             if(state.connection == 'connected'){
                 this._ifaceState.connected = true;
+                console.log('event emit: connected');
+                this.event.emit('connected');
             }else{
                 this._ifaceState.connected = false;
+                console.log('event emit: disconnected');
+                this.event.emit('disconnected');
             }
             if(this._debug){
                 console.log('refreshIfaceState: state change');
