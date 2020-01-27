@@ -2,11 +2,14 @@
  * @file Synchronized WebSocket repeater to native socket
  *      jtWebSockRepeater.js
  * @module ./jtWebSockRepeater
- * @version 2.01.200122a
+ * @version 2.02.200124a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
- * @copyright (C) 2019 jtLab, Hokkaido Information University
+ * @copyright (C) 2019-2020 jtLab, Hokkaido Information University
  */
+
+// @ToDo can not connect to WiFi AP when this client is already connected to other AP.
+
 
 const iconv = require('iconv-lite');
 const ws = require('ws');
@@ -689,7 +692,7 @@ class jtWebSockRepeater{
         }
 
         // connect WiFi direct
-        if(device.ssid && !this._wifi.connectionState.connected){
+        if(device.ssid != deviceName && !this._wifi.connectionState.connected){
             this.log('tring to establish wifi connection.');
             // init WiFi
             if(count = await this._wifi.init(false)){
@@ -717,17 +720,17 @@ class jtWebSockRepeater{
                         response.message = 'WiFi direct connect: ' + device.ssid + ' not found';
                         return response;
                     }
-                    this._wifi.event.once('disconnected', () => {
-                        this.log('WiFi disconnected.');
-                        this.handleCommands({
-                            'commID': 0,
-                            'target': 'client',
-                            'type': 'notify',
-                            'result': false,
-                            'message': 'WiFi disconnected'
-                        });
-                    });
                 }
+                this._wifi.event.once('disconnected', () => {
+                    this.log('WiFi disconnected.');
+                    this.handleCommands({
+                        'commID': 0,
+                        'target': 'client',
+                        'type': 'notify',
+                        'result': false,
+                        'message': 'WiFi disconnected'
+                    });
+                });
             }else{
                 response.message = 'WiFi direct connect: ' + device.ssid + ' not found';
                 return response;
