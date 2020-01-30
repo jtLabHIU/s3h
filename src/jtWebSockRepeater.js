@@ -196,6 +196,8 @@ class jtWebSockRepeater{
         this._mesh = {};
         this._mesh.sock = null;
         this._mesh.input = [];
+
+        this._useInfraAP = false;
     }
 
     addDeviceInfo(device, overWrite = false){
@@ -678,6 +680,11 @@ class jtWebSockRepeater{
 
         this.log('start connect sequence');
 
+        if(this._wifi.isConnectedToInfraAP()){
+            await this._wifi.disconnect();
+            this._useInfraAP = true;
+        }
+
         if(deviceName && deviceName != device.name){
             device = this._devices.find( value => (value.name == deviceName));
             if(device){
@@ -716,6 +723,7 @@ class jtWebSockRepeater{
                         loop = false;
                     }else if(this._wifi.connectionState.connected){
                         this.log('IP lookup failed. retry to connect');
+                        await sleep(1000);
                     }else{
                         response.message = 'WiFi direct connect: ' + device.ssid + ' not found';
                         return response;
@@ -730,6 +738,9 @@ class jtWebSockRepeater{
                         'result': false,
                         'message': 'WiFi disconnected'
                     });
+                    if(this._useInfraAP){
+                        this._wifi.connect();
+                    }
                 });
             }else{
                 response.message = 'WiFi direct connect: ' + device.ssid + ' not found';

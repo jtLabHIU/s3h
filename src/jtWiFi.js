@@ -20,6 +20,7 @@ const arp = require('@network-utils/arp-lookup');
 const { exec, execSync } = require('child_process');
 const sleep = require('./jtDevice/jtSleep');
 const netUtil = require('./jtNetUtil');
+const iconv = require('iconv-lite');
 const EventEmitter = require('events').EventEmitter;
 
 const scanner = '.\\asset\\WlanScan.exe';
@@ -290,7 +291,6 @@ class jtWiFi{
      * @returns {boolean} - one of state were changed
      */
     async refreshIfaceState(){
-        console.log('refreshIfaceState');
         let result = false;
         const state = wifi.getIfaceState();
         if(
@@ -322,6 +322,18 @@ class jtWiFi{
     }
 
     /**
+     * returns true if this module connected to infrastructure AP
+     * @returns {boolean}
+     */
+    async isConnectedToInfraAP(){
+        let result = false;
+        if(this.connectionState.connected && this.connectionState.network.ssid == this._infraAP.ssid){
+            result = true;
+        }
+        return result;
+    }
+
+    /**
      * connect to AP and awake network watchdog
      * @param {Network} network - AP's SSID which try to connect, default:_infraAP
      * @returns {wifi-control.response|boolean} - false:error 
@@ -343,6 +355,7 @@ class jtWiFi{
                 try{
                     result = await this.connectToAP_Promise(ap);
                     this._ifaceState.network = network;
+                    console.log('MAC:', network.mac);
                     this._ifaceState.network.ip = await arp.toIP(network.mac);
                     this.refreshIfaceState();
                     this._watchdog = setInterval(() => this.refreshIfaceState(), 1000);
@@ -364,6 +377,7 @@ class jtWiFi{
         let result = false;
         try{
             this.stop();
+            wifi.disconnect();
             result = await this.resetWiFi_Promise();
             this.refreshIfaceState();
             console.log('WiFi disconnected.');
@@ -409,6 +423,7 @@ class jtWiFi{
     }
 }
 
+/*
 async function test(){
     jtwifi = new jtWiFi();
     let count;
@@ -436,6 +451,6 @@ async function test(){
 }
 
 test();
-
+*/
 
 module.exports = jtWiFi;
