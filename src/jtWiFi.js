@@ -2,28 +2,32 @@
  * @file synchronized WiFi manager
  *      jtWiFi.js
  * @module ./jtWiFi
- * @version 1.41.200125a
+ * @version 1.52.200302a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019-2020 jtLab, Hokkaido Information University
  * 
  * ** IMPORTANT WARNING **
  * for Non-English Windows environment users:
- * `wifi-control` module isn't work well on non-english codepage.
- * please add `chcp 437 & ` into before `netsh`
- * of `node-modules/wifi-control/lib/win32.js` line 69 & 163
+ * modules that using Windows command aren't work well on non-english codepage.
+ * please change to `execSyncToBuffer = require('../../../src/jtShell').syncExec;`
+ * of `node-modules/wifi-control/lib/wifi-control.js` line 7
+ * please change to `fs = require('../../../src/jtShell');`
+ * of `node-modules/wifi-control/lib/win32.js` line 5
+ * please change to `const child_process_1 = require("../../../../src/jtShell");`
+ * of `node-modules/@network-utils/arp-lookup/dist/index.js` line 11
  * 
  */
 
 const wifi  = require('wifi-control');
 const arp = require('@network-utils/arp-lookup');
-const { exec, execSync } = require('child_process');
+const shell = require('./jtShell');
 const sleep = require('./jtDevice/jtSleep');
-const netUtil = require('./jtNetUtil');
+const NetUtil = require('./jtNetUtil');
 const iconv = require('iconv-lite');
 const EventEmitter = require('events').EventEmitter;
 
-const scanner = '.\\asset\\WlanScan.exe';
+const scanner = '\\asset\\WlanScan.exe';
 
 /**
  * - Network:
@@ -33,6 +37,7 @@ const scanner = '.\\asset\\WlanScan.exe';
  * @property {string|undefined} password - password
  * @property {string|null} mac - MAC address
  * @property {string|null} ip - IP address
+ * @property {Portal|null} host - instance of network portal 
  */
 /** 
  * - APList:
@@ -77,7 +82,16 @@ class jtWiFi{
      * initialize fields
      * @constructor
      */
-    constructor(){
+    constructor(appPath = null){
+        /**
+         * path to app
+         * @type {string}
+         */
+        this._appPath = '.'
+        if(appPath){
+            this._appPath = appPath;
+        }
+
         /**
          * debug flag
          * @type {boolean}
@@ -102,7 +116,8 @@ class jtWiFi{
                 {
                     ssid: null,
                     mac: null,
-                    ip: null
+                    ip: null,
+                    host: null
                 }
             ],
             msg: 'not scanned yet'
@@ -119,7 +134,8 @@ class jtWiFi{
             network: {
                 ssid: null,
                 mac: null,
-                ip: null
+                ip: null,
+                host: null
             },
             connected: false,
             connection: 'disconnected',
@@ -162,12 +178,11 @@ class jtWiFi{
 
         const state = wifi.getIfaceState();
         if(state.connection === 'connected'){
-            this._infraAP = {
+            this._infraAP = await this.getPassword({
                 ssid: state.ssid,
                 mac: (await this.lookup(state.ssid)).mac,
                 ip: null
-            }
-            this._infraAP = await this.getPassword(this._infraAP);
+            });
         }
 
         return result;
@@ -193,13 +208,18 @@ class jtWiFi{
      */
     connectToAP_Promise(ap){
         return new Promise( (resolve, reject) => {
+            const cwd = shell.cwd();
+            shell.cwd(shell.temp());
             return wifi.connectToAP(ap, (err, response) => {
-                if(err){
-                    if(err.indexOf('confirmation timed out')<0){
+                if(err && err.stderr){
+                    console.log('connectToAP_Promise:',typeof err, err)
+                    if(err.stderr.indexOf('confirmation timed out')<0){
                         reject(err);
                         return;
                     }
                 }
+                shell.cwd(cwd);
+                console.log('writeback:', cwd);
                 resolve(response);
             });
         });
@@ -211,8 +231,9 @@ class jtWiFi{
     resetWiFi_Promise(){
         return new Promise( (resolve, reject) => {
             return wifi.resetWiFi((err, response) => {
-                if(err){
-                    if(err.indexOf('confirmation timed out')<0){
+                if(err && err.stderr){
+                    console.log('resetWiFi_Promise:',typeof err, err)
+                    if(err.stderr.indexOf('confirmation timed out')<0){
                         reject(err);
                         return;
                     }
@@ -230,8 +251,13 @@ class jtWiFi{
         let result = 0;
         let aplist = this._aplist;
         try{
-            exec(scanner, error => { /* do nothing */ });
-            const response = await this.scanForWiFi_Promise();
+            if(shell.isWin32()){
+                var response = shell.syncExec(this._appPath + scanner);
+                if(response.stderr){
+                    console.log('wifi.scan() error:', this._appPath + scanner, response.status, response.stderr);
+                }
+            }
+            response = await this.scanForWiFi_Promise();
             aplist.success = response.success;
             aplist.numofap = parseInt(response.msg.match(/\d+/));
             aplist.networks = response.networks;
@@ -308,11 +334,15 @@ class jtWiFi{
             this._ifaceState.power = state.power;
 
             if(state.connection == 'connected'){
-                this._ifaceState.connected = true;
-                this.event.emit('connected');
+                if(!this._ifaceState.connected){
+                    this._ifaceState.connected = true;
+                    this.event.emit('connected');
+                }
             }else{
-                this._ifaceState.connected = false;
-                this.event.emit('disconnected');
+                if(this._ifaceState.connected){
+                    this._ifaceState.connected = false;
+                    this.event.emit('disconnected');
+                }
             }
             if(this._debug){
                 console.log('refreshIfaceState: state change');
@@ -325,12 +355,30 @@ class jtWiFi{
      * returns true if this module connected to infrastructure AP
      * @returns {boolean}
      */
-    async isConnectedToInfraAP(){
+    isConnectedToInfraAP(){
         let result = false;
-        if(this.connectionState.connected && this.connectionState.network.ssid == this._infraAP.ssid){
+        if(this.connectionState.connected && this._infraAP && this.connectionState.network.ssid == this._infraAP.ssid){
             result = true;
         }
         return result;
+    }
+
+    /**
+     * connect to infrastructure AP simply
+     */
+    async connectToInfraAP(){
+        if(!this.isConnectedToInfraAP() && this._infraAP){
+            if(this.connectionState.connected){
+                await this.disconnect();
+            }
+            await this.scan();
+            if(shell.isWin32()){
+                shell.execSync('netsh wlan connect name="' + this._infraAP.ssid + '"');
+                this.refreshIfaceState();
+            }else{
+                await this.connect();
+            }
+        }
     }
 
     /**
@@ -355,8 +403,14 @@ class jtWiFi{
                 try{
                     result = await this.connectToAP_Promise(ap);
                     this._ifaceState.network = network;
-                    console.log('MAC:', network.mac);
+                    await arp.getTable();
                     this._ifaceState.network.ip = await arp.toIP(network.mac);
+
+                    this._ifaceState.network.host = new NetUtil(this._ifaceState.network.ip);
+                    this._ifaceState.network.host.event.on('dead', () => {
+                        this.disconnect();
+                    });
+                    this._ifaceState.network.host.startWatchdog();
                     this.refreshIfaceState();
                     this._watchdog = setInterval(() => this.refreshIfaceState(), 1000);
                 }catch(e){
@@ -377,7 +431,6 @@ class jtWiFi{
         let result = false;
         try{
             this.stop();
-            wifi.disconnect();
             result = await this.resetWiFi_Promise();
             this.refreshIfaceState();
             console.log('WiFi disconnected.');
@@ -390,9 +443,12 @@ class jtWiFi{
     }
 
     /**
-     * stop refreshIfaceState watchdog
+     * stop watchdogs
      */
     stop(){
+        try{
+            this._ifaceState.network.host.stopWatchdog();
+        } catch(e){}
         if(this._watchdog){
             clearInterval(this._watchdog);
         }
@@ -400,52 +456,54 @@ class jtWiFi{
 
     /**
      * get Wi-Fi password from network profiles to Network object
+     * 
      * @param {Network} network - target network
-     * @returns {Network|boolean|null} - network.password added / null:no password / false:error
+     * @returns {Network} - network.password added if success to get password
+     * 
+     * @notice works on win32 only
      */
     async getPassword(network = {ssid:null}){
         let result = network;
-        if(network.ssid){
-            const command = `chcp 437 & netsh wlan show profiles name="${network.ssid}" key=clear`
+        if(shell.isWin32() && network.ssid){
+            const command = `netsh wlan show profiles name="${network.ssid}" key=clear`
             try{
-                const stdout = execSync(command);
+                const stdout = shell.syncExec(command).stdout;
                 const regexp = /^\s*Key Content\s*: (.+)\s*$/gm.exec(stdout);
                 if(regexp){
                     result.password = regexp[1];
-                }else{
-                    result = null;
                 }
-            }catch(e){
-                result = false;
-            }
-            return result;
+            }catch(e){}
         }
+        return result;
     }
 }
 
 /*
 async function test(){
-    jtwifi = new jtWiFi();
+    
+    jtwifi = new jtWiFi('path\\to\\app');
     let count;
     if(count = await jtwifi.init()){
         console.log('ap:', count);
     }else{
         console.log('WiFi down...');
     }
-    const network = await jtwifi.lookup('TELLO-D3F077');
+//    const network = await jtwifi.lookup('TELLO-D3F077');
+    const network = await jtwifi.lookup('TELLO-D2D555');
     if(network){
         await jtwifi.disconnect();
         console.log('connect:', await jtwifi.connect(network));
-        console.log(jtwifi.connectionState.network);
+        //console.log(jtwifi.connectionState.network);
         while(jtwifi.connectionState.connected){
             console.log('running...');
             await sleep(1000);
         }
-        await jtwifi.disconnect();
-        console.log('fallback:', await jtwifi.connect());
-        console.log(jtwifi.connectionState.network);
+        //await jtwifi.disconnect();
+//        console.log('fallback:', await jtwifi.connect());
+//        console.log(jtwifi.connectionState.network);
         jtwifi.stop();
     }else{
+        console.log(network);
         console.log('Tello not found');
     }
 }

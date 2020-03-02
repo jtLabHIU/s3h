@@ -2,7 +2,7 @@
  * @file Synchronized WebSocket repeater to native socket
  *      jtWebSockRepeater.js
  * @module ./jtWebSockRepeater
- * @version 2.02.200124a
+ * @version 2.11.200302a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019-2020 jtLab, Hokkaido Information University
@@ -17,7 +17,7 @@ const net = require('net');
 const dgram = require('dgram');
 const wifi = require('./jtWiFi');
 const sleep = require('./jtDevice/jtSleep');
-const { exec } = require('child_process');
+const { jtShell } = require('./jtShell');
 
 /**
  * - WSRPacket:
@@ -154,8 +154,6 @@ class Device{
 
 class jtWebSockRepeater{
     constructor(args){
-        this._wifi = new wifi();
-
         this._devices = [{
             'name': 'D2D555',
             'ssid': 'TELLO-D2D555',
@@ -170,6 +168,15 @@ class jtWebSockRepeater{
         }
 
         this._device = { 'name': null };
+
+        /** Electron app object
+         *  @type {object} _app */
+        this._app = null;
+        if(args.app && typeof args.app === 'object'){
+            this._app = args.app;
+        }
+
+        this._wifi = new wifi(this._app.getAppPath());
 
         /** WebSocket up/downstream port
          *  @type {number} _portComm */
@@ -289,6 +296,7 @@ class jtWebSockRepeater{
             });
             this._commServ.on('close', () => {
                 this._commServ.readyState = ws.CLOSING;
+                this._commServ.connected = false;
                 this.log('commServ is closing');
                 this.handleCommands({
                     'msgID': this._msgIDCount++,
@@ -418,6 +426,16 @@ class jtWebSockRepeater{
         }
     }
 
+    /**
+     * restart command sequencer
+     */
+    async restart(){
+        this._watchdogTerminater = true;
+        await this.rejectRequests();
+        await sleep(500);
+        this.start();
+    }
+
     /** 
      * stop command sequencer
      */
@@ -425,20 +443,17 @@ class jtWebSockRepeater{
         await this.rejectRequests();
         this._watchdogTerminater = true;
         try{
-            this.log('sock close:');
-            await this._device.socket.disconnect();
-            this.log('socket disconnect:');
             await this._device.socket.close();
-            this.log('socket close:');
-            await this._device.status.disconnect();
-            this.log('status disconnect:');
+            this.log('socket closed:');
             await this._device.status.close();
-            this.log('status close:');
-            await this._wifi.disconnect();
-            this.log('all sockets are disconnected.');
+            this.log('status closed:');
             this._device.socket = undefined;
             this._device.status = undefined;
-        }catch(maleCatch){}
+        }catch(maleCatch){
+//            this.log(maleCatch);
+        }
+        await this._wifi.disconnect();
+        this.log('all sockets are disconnected.');
     }
 
     close(){
@@ -464,34 +479,33 @@ class jtWebSockRepeater{
                 response.result = false;
                 response.message = 'recv from device: response timeout'
             }else{
-                if(req.command === 'command' && response.message !== 'ok'){
-                    this.log('binary mode stream detected: skip');
-                    response.message = await this.popResponse(device.socket);
-                    if(response.message === false){
-                        response.result = false;
-                        response.message = 'recv from device: response timeout'
+                if(req.command === 'command'){
+                    while(response.message !== 'ok' || response.result){
+                        this.log('binary mode stream detected: skip');
+                        response.message = await this.popResponse(device.socket);
+                        if(response.message === false){
+                            response.result = false;
+                            response.message = 'recv from device: response timeout'
+                        }
                     }
                 } else if(req.command === 'streamon' && response.message === 'ok'){
-                    exec('cd', (error, stdout) => {
-                        let pathAdd = '';
-                        const path = stdout.split('\\');
-                        if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
-                          pathAdd = 'jtS3H-win32-x64\\';
-                        }
-                        exec('".\\' + pathAdd + 'asset\\ffplay" -probesize 32 -i udp://0.0.0.0:11111 -framerate 30', (error) => {
-                          if(error){
+                    const invoker = new jtShell(65001, 'utf8');
+                    const cwd = this._app.getAppPath();
+                    invoker.exec('"' + cwd + '\\asset\\ffplay" -probesize 32 -i udp://0.0.0.0:11111 -framerate 30', (error) => {
+                        if(error){
                             console.log(error);
-                          }
-                        });
-                        console.log('".\\' + pathAdd + 'asset\\ffplay" -probesize 32 -i udp://0.0.0.0:11111 -framerate 30 was invoked as Stream Viewer');
-                      });
+                        }
+                    });
+                    console.log('"' + cwd + '\\asset\\ffplay" -probesize 32 -i udp://0.0.0.0:11111 -framerate 30 was invoked as Stream Viewer');
+                } else if(response.message == 'error'){
+                    response.result = false;
                 }
 
                 response.result = true;
                 this.log('recv from device:', response.message);
             }
         }catch(e){
-            this.log('device command send error');
+            this.log('device command send error:', e);
             response.message = 'device command send error';
         }
         return response;
@@ -557,11 +571,7 @@ class jtWebSockRepeater{
             }
         }else if(command == 'reset'){
             this.log('execModuleCommand: reset invoked');
-            this._watchdogTerminater = true;
-            await this.rejectRequests();
-            await sleep(500);
-            this._watchdogTerminater = false;
-            this.start();
+            await this.restart();
             response.result = false;
             response.message = 'done'
             this.log('execModuleCommand: reset done');
@@ -581,6 +591,27 @@ class jtWebSockRepeater{
 
             response.result = true;
             response.message = 'OK';
+        }else if(command == 'disconnect'){
+            response.result = true;
+            response.message = 'not connected';
+            try{
+                if(this._wifi.connectionState.connected && 
+                this._wifi.connectionState.network.ssid === this._device.ssid){
+                    await this.stop();
+                    await this.restart();
+                    response.message = 'disconnected';
+                }
+            }catch(e){}
+        }else if(command == 'isAlive'){
+            response.result = false;
+            response.message = 'disconnected';
+            try{
+                if(this._wifi.connectionState.connected && 
+                   this._wifi.connectionState.network.ssid === this._device.ssid){
+                    response.result = true;
+                    response.message = 'connected';
+                }
+            }catch(e){}
         }
         return response;
     }
@@ -714,6 +745,7 @@ class jtWebSockRepeater{
             const network = await this._wifi.lookup(device.ssid);
             if(network){
                 let loop = true;
+                let count = 10;
                 while(loop){
                     this.log((await this._wifi.connect(network)).msg);
                     device.mac = this._wifi.connectionState.network.mac;
@@ -723,6 +755,10 @@ class jtWebSockRepeater{
                         loop = false;
                     }else if(this._wifi.connectionState.connected){
                         this.log('IP lookup failed. retry to connect');
+                        if(--count<0){
+                            this.log('IP lookup retry:time out');
+                            loop = false;
+                        }
                         await sleep(1000);
                     }else{
                         response.message = 'WiFi direct connect: ' + device.ssid + ' not found';
@@ -731,15 +767,19 @@ class jtWebSockRepeater{
                 }
                 this._wifi.event.once('disconnected', () => {
                     this.log('WiFi disconnected.');
+                    /**
+                     * @todo can't handle commands because there is no request.sock object
+                     */
+                    /*
                     this.handleCommands({
                         'commID': 0,
                         'target': 'client',
                         'type': 'notify',
                         'result': false,
                         'message': 'WiFi disconnected'
-                    });
+                    });*/
                     if(this._useInfraAP){
-                        this._wifi.connect();
+                        this._wifi.connectToInfraAP();
                     }
                 });
             }else{

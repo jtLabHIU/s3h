@@ -1,19 +1,21 @@
 /**
  * @file jtS3H - jtLab Scratch 3.0 Helper
  *      startup.js
- * @version 1.01.191017a
+ * @version 1.04.200226b
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
- * @copyright (C) 2019 jtLab, Hokkaido Information University
+ * @copyright (C) 2019-2020 jtLab, Hokkaido Information University
  */
 
 const {app, BrowserWindow, Menu, Tray} = require('electron');
 const sleep = require('./jtDevice/jtSleep');
 const WSR = require('./jtWebSockRepeater');
-const { exec } = require('child_process');
+const shell = require('./jtShell');
 let mainWindow = null;
 let tray = null;
 let repeater = null;
+
+shell.cwd(app.getAppPath());
 
 // 
 if(!app.requestSingleInstanceLock()){
@@ -24,7 +26,10 @@ if(!app.requestSingleInstanceLock()){
 }
 
 async function startCommServ(){
-  repeater = new WSR({portComm:5963});
+  repeater = new WSR({
+    portComm: 5963,
+    app: app
+  });
   repeater.addDeviceInfo(
       {
           'name': 'D2D555',
@@ -66,7 +71,7 @@ app.on('ready', function() {
   var contextMenu = Menu.buildFromTemplate([
       { label: 'exit', click(menuItem){ app.quit(); } }
   ]);
-  tray.setToolTip('jtS3Helper');
+  tray.setToolTip('jtS3Helper on ' + app.getAppPath());
   tray.setContextMenu(contextMenu);
 
   tray.on('click', () => {
@@ -80,19 +85,19 @@ if(!app.terminating){
 }
 
 if(process.env.JTS3H_MODE_DEVSERV === undefined || process.env.JTS3H_MODE_DEVSERV.trim() != 'true'){
-  exec('cd', (error, stdout) => {
-    let pathAdd = '';
-    const path = stdout.split('\\');
-    if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
-      pathAdd = 'jtS3H-win32-x64\\';
+  let pathAdd = '..\\..\\';
+  const path = app.getAppPath().split('\\');
+  if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
+    pathAdd = 'jtS3H-win32-x64\\';
+  }
+  shell.exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
+    if(error){
+      console.log(error);
     }
-    exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
-      if(error){
-        console.log(error);
-      }
-    });
-    console.log('"' + pathAdd + 'win-unpacked\\Scratch Desktop.exe" was invoked as jtScratch');
+    console.log('child process closed. start terminating');
+    app.quit();
   });
+  console.log('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe" was invoked as jtScratch');
 }else{
   console.log('now waiting for connect jtScratch that running on webpack-dev-server');  
 }
