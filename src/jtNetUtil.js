@@ -20,7 +20,7 @@ const EventEmitter = require('events').EventEmitter;
  * @type {ping}
  * @see https://www.npmjs.com/package/ping
  */
-ping = require('ping');
+nodePing = require('ping');
 /**
  * arp-lookup
  * @type {arp}
@@ -73,7 +73,7 @@ class jtNetUtil{
         let result = {alive:false};
         let count = 0;
         while(count == 0 || (!result.alive && count < retry && !this._watchdogTerminater)){
-            result = await ping.promise.probe(
+            result = await nodePing.promise.probe(
                 this._portal.address, {
                     timeout: 0.5,
                     min_reply: 1
@@ -90,6 +90,7 @@ class jtNetUtil{
     /**
      * start watchdog whether alive
      * @param {number} interval - watch interval (ms)
+     * @returns {Promise}
      */
     async startWatchdog(interval = 1000){
         let lastResult = null;
@@ -127,6 +128,23 @@ class jtNetUtil{
     stopWatchdog(){
         console.log('jtNetUtils: watchdog stopped');
         this._watchdogTerminater = true;
+    }
+
+    /**
+     * simple ping
+     * @static
+     * @param {string} ip - IP address
+     * @returns {Promise<boolean>}
+     */
+    async ping(ip = null){
+        var result = false;
+        if(ip){
+            result = nodePing.promise.probe(ip, {
+                timeout: 1,
+                min_reply: 1
+            });
+        }
+        return result;
     }
 
 }

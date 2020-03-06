@@ -2,7 +2,7 @@
  * @file synchronized WiFi manager
  *      jtWiFi.js
  * @module ./jtWiFi
- * @version 1.52.200302a
+ * @version 1.60.200305a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019-2020 jtLab, Hokkaido Information University
@@ -384,9 +384,10 @@ class jtWiFi{
     /**
      * connect to AP and awake network watchdog
      * @param {Network} network - AP's SSID which try to connect, default:_infraAP
+     * @param {string} target - The IP address which host is watch from watchdog
      * @returns {wifi-control.response|boolean} - false:error 
      */
-    async connect(network = this._infraAP){
+    async connect(network = this._infraAP, target = null){
         let result = false;
         if(network){
             const ap = {
@@ -402,21 +403,39 @@ class jtWiFi{
             }else{
                 try{
                     result = await this.connectToAP_Promise(ap);
-                    this._ifaceState.network = network;
-                    await arp.getTable();
-                    this._ifaceState.network.ip = await arp.toIP(network.mac);
-
-                    this._ifaceState.network.host = new NetUtil(this._ifaceState.network.ip);
-                    this._ifaceState.network.host.event.on('dead', () => {
-                        this.disconnect();
-                    });
-                    this._ifaceState.network.host.startWatchdog();
-                    this.refreshIfaceState();
-                    this._watchdog = setInterval(() => this.refreshIfaceState(), 1000);
-                }catch(e){
-                    if(this._debug){
-                        console.log('connect error:', e);
+                    console.log('jtWifi:connect:result', result);
+                    if(result.success){
+                        this._ifaceState.network = network;
+                        await arp.getTable();
+                        this._ifaceState.network.ip = await arp.toIP(network.mac);
+                        console.log('debug: ', this._ifaceState.network.ip);
+                        // use default target IP when arp lookup from MAC address was failed
+                        if(!this._ifaceState.network.ip){
+                            if(NetUtil.ping(target)){
+                                this._ifaceState.network.ip = target;
+                                result.success = true;
+                                result.msg = 'connect successfully but arp lookup failed';
+                            }else{
+                                result.success = false;
+                                result.msg = 'connected but host not found';
+                            }
+                        }
+                        // start watchdog
+                        if(result.success){
+                            console.log('jtWiFi:startWatchdog: success');
+                            this._ifaceState.network.host = new NetUtil(this._ifaceState.network.ip);
+                            this._ifaceState.network.host.event.on('dead', () => {
+                                this.disconnect();
+                            });
+                            this._ifaceState.network.host.startWatchdog();
+                            this.refreshIfaceState();
+                            this._watchdog = setInterval(() => this.refreshIfaceState(), 1000);
+                        }
                     }
+                }catch(e){
+                    //if(this._debug){
+                        console.log('connect error:', e);
+                    //}
                 }
             }
         }

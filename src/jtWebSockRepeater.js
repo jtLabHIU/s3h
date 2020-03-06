@@ -2,7 +2,7 @@
  * @file Synchronized WebSocket repeater to native socket
  *      jtWebSockRepeater.js
  * @module ./jtWebSockRepeater
- * @version 2.11.200302a
+ * @version 2.12.200305a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019-2020 jtLab, Hokkaido Information University
@@ -605,6 +605,7 @@ class jtWebSockRepeater{
         }else if(command == 'isAlive'){
             response.result = false;
             response.message = 'disconnected';
+            console.log('isAlive:', this._wifi.connectionState);
             try{
                 if(this._wifi.connectionState.connected && 
                    this._wifi.connectionState.network.ssid === this._device.ssid){
@@ -744,26 +745,14 @@ class jtWebSockRepeater{
             this.log('try to WiFi direct connect:', device.ssid);
             const network = await this._wifi.lookup(device.ssid);
             if(network){
-                let loop = true;
-                let count = 10;
-                while(loop){
-                    this.log((await this._wifi.connect(network)).msg);
+                const connectResult = await this._wifi.connect(network, '192.168.10.1');
+                if(connectResult.success){
                     device.mac = this._wifi.connectionState.network.mac;
                     device.ip = this._wifi.connectionState.network.ip;
-                    if(device.ip){
-                        this.log('IP:', device.ip);
-                        loop = false;
-                    }else if(this._wifi.connectionState.connected){
-                        this.log('IP lookup failed. retry to connect');
-                        if(--count<0){
-                            this.log('IP lookup retry:time out');
-                            loop = false;
-                        }
-                        await sleep(1000);
-                    }else{
-                        response.message = 'WiFi direct connect: ' + device.ssid + ' not found';
-                        return response;
-                    }
+                    this.log('IP: ' + device.ip + " -> " + connectResult.msg);
+                }else{
+                    response.message = 'WiFi direct connect: ' + device.ssid + ' ' + connectResult.msg;
+                    return response;
                 }
                 this._wifi.event.once('disconnected', () => {
                     this.log('WiFi disconnected.');
