@@ -203,6 +203,7 @@ class jtWebSockRepeater{
         this._mesh = {};
         this._mesh.sock = null;
         this._mesh.input = [];
+        this._mesh.connected = false;
 
         this._useInfraAP = false;
     }
@@ -401,12 +402,6 @@ class jtWebSockRepeater{
         // command for Mesh
         } else if(request.target == 'mesh'){
             response = await this.execMeshCommand(request);
-        // broadcast
-        //} else if(request.type == 'broadcast'){
-        //    this.execModuleCommand(request);
-        //    response.result = true;
-        //    response.message = 'broadcast as async'
-        // command for this module
         } else {
             response = await this.execModuleCommand(request);
         }
@@ -626,8 +621,11 @@ class jtWebSockRepeater{
         const command = commands[0];
 
         if(command == 'terminate'){
-            response.result = true;
-            response.message = 'OK';
+            response = await this.disconnectFromMesh(response);
+        }else if(command == 'start'){
+            response.result = false;
+            response.message = 'not implemented yet';
+            /**@todo: return IP Address of this host through response.message */
         }else if(command == 'connect'){
             this.log('execMeshCommand: connect invoked');
             if(commands.length>1){
@@ -636,14 +634,15 @@ class jtWebSockRepeater{
                 response = await this.connectToMesh(response);
             }
         }else{
-            const buf = Buffer.allocUnsafe(command.length+16);
-            buf.writeInt32BE(command.length+12);
-            buf.write('broadcast "' + command + '"', 4);
+            const strbuf = Buffer.from(req.command);
+            const buf = Buffer.allocUnsafe(strbuf.length + 4);
+            buf.writeInt32BE(strbuf.length);
+            buf.write(req.command, 4);
             this.log(buf);
-            if(this._mesh.sock){
+            if(this._mesh.connected){
                 this.log(await this._mesh.sock.write(buf));
                 response.result = true;
-                response.message = 'Broadcasted: ' + command;
+                response.message = 'Mesh message: ' + req.command;
             }else{
                 response.message = 'Scratch MESH disconnected.';
             }
@@ -659,14 +658,29 @@ class jtWebSockRepeater{
     async connectToMesh(response, host = 'localhost'){
         this._mesh.sock = await net.createConnection( { host: host, port: 42001 } );
         //this._mesh.sock.setNoDelay();
-        this._mesh.sock.on('connect', () => { this.log('connected to Scratch MESH host:', host) });
-        this._mesh.sock.on('close', () => { this.log('Scratch MESH connection closed.')});
+        this._mesh.sock.on('connect', () => {
+            this.log('connected to Scratch MESH host:', host);
+            this._mesh.connected = true;
+        });
+        this._mesh.sock.on('close', () => {
+            this.log('Scratch MESH connection closed.');
+            this._mesh.connected = false;
+        });
+        this._mesh.sock.on('error', (err) => {
+            this.log(err);
+        });
+
+        // Mesh recognizer
         this._mesh.sock.on('data', (data) => {
+            // get message length
             const len = data.readInt32BE();
             let params = data.toString('utf8', 4, len+4).split(' ');
+            // message type: `broadcast` or `sensor-update`
             const messageType = params.shift().toLowerCase();
+            // request each message
             while(params.length>0 && params[0].length>0){
                 this.log(params.length, params[0], params[0].length);
+                // broadcast message or sensor name
                 let key = params.shift();
                 if(key.slice(0, 1) === '"'){
                     if(key.slice(-1) === '"'){
@@ -676,6 +690,7 @@ class jtWebSockRepeater{
                     }
                 }
 
+                // sensor value
                 let value = null;
                 if(params.length>0){
                     value = params.shift();
@@ -688,6 +703,7 @@ class jtWebSockRepeater{
                     }
                 }
 
+                // request to helper as Mesh message (commID:-1)
                 const sender = JSON.stringify({
                     'commID': -1,
                     'result': true,
@@ -703,6 +719,19 @@ class jtWebSockRepeater{
         response.result = true;
         response.message = 'ok'
 
+        return response;
+    }
+
+    async disconnectFromMesh(response){
+        if(this._mesh.connected){
+            try{
+                await this._mesh.sock.end();
+                await sleep.wait(0, 100, async () => { return !this._mesh.connected; });
+                await this._mesh.sock.destroy();
+                response.result = true;
+                response.message = 'ok'
+            }catch(e){ console.log('disconnect from Mesh failed:', e); }
+        }
         return response;
     }
 
