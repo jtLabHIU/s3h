@@ -411,7 +411,7 @@ class jtWiFi{
                         console.log('debug: ', this._ifaceState.network.ip);
                         // use default target IP when arp lookup from MAC address was failed
                         if(!this._ifaceState.network.ip){
-                            if(NetUtil.ping(target)){
+                            if(new NetUtil().ping(target)){
                                 this._ifaceState.network.ip = target;
                                 result.success = true;
                                 result.msg = 'connect successfully but arp lookup failed';
