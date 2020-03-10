@@ -2,7 +2,7 @@
  * @file synchronized WiFi manager
  *      jtWiFi.js
  * @module ./jtWiFi
- * @version 1.60.200305a
+ * @version 1.60.200310a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019-2020 jtLab, Hokkaido Information University
