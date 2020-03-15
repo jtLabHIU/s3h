@@ -9,7 +9,7 @@
  */
 
 // @ToDo can not connect to WiFi AP when this client is already connected to other AP.
-
+/** */
 
 const iconv = require('iconv-lite');
 const ws = require('ws');
@@ -18,6 +18,7 @@ const dgram = require('dgram');
 const wifi = require('./jtWiFi');
 const sleep = require('./jtDevice/jtSleep');
 const { jtShell } = require('./jtShell');
+const { logger } = require('./jtDebugConsole');
 
 /**
  * - WSRPacket:
@@ -488,10 +489,10 @@ class jtWebSockRepeater{
                     const cwd = this._app.getAppPath();
                     invoker.exec('"' + cwd + '\\asset\\ffplay" -probesize 32 -i udp://0.0.0.0:11111 -framerate 30', (error) => {
                         if(error){
-                            console.log(error);
+                            this.log(error);
                         }
                     });
-                    console.log('"' + cwd + '\\asset\\ffplay" -probesize 32 -i udp://0.0.0.0:11111 -framerate 30 was invoked as Stream Viewer');
+                    this.log('"' + cwd + '\\asset\\ffplay" -probesize 32 -i udp://0.0.0.0:11111 -framerate 30 was invoked as Stream Viewer');
                 } else if(response.message == 'error'){
                     response.result = false;
                 }
@@ -600,7 +601,7 @@ class jtWebSockRepeater{
         }else if(command == 'isAlive'){
             response.result = false;
             response.message = 'disconnected';
-            console.log('isAlive:', this._wifi.connectionState);
+            this.log('isAlive:', this._wifi.connectionState);
             try{
                 if(this._wifi.connectionState.connected && 
                    this._wifi.connectionState.network.ssid === this._device.ssid){
@@ -730,7 +731,7 @@ class jtWebSockRepeater{
                 await this._mesh.sock.destroy();
                 response.result = true;
                 response.message = 'ok'
-            }catch(e){ console.log('disconnect from Mesh failed:', e); }
+            }catch(e){ this.log('disconnect from Mesh failed:', e); }
         }
         return response;
     }
@@ -910,11 +911,7 @@ class jtWebSockRepeater{
     }
     
     log(msg, ...msgs){
-        if(msgs.length){
-            console.log(msg, ...msgs);
-        }else{
-            console.log(msg);
-        }
+        logger.log(msg, ...msgs);
     }
 }
 
