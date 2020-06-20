@@ -2,7 +2,7 @@
  * @file Simple debug console via TCP/IP
  *      jtDebugConsole.js
  * @module ./jtDebugConsole
- * @version 1.00.200312a
+ * @version 1.10.200326a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2020 jtLab, Hokkaido Information University
@@ -53,9 +53,25 @@ class DebugServer{
         return this._port;
     }
 
-    log(data1, ...datum){
-        const data = ('' + data1).concat(...datum);
-        console.log(data);
+    log(...datum){
+        let data = '';
+        for(let idx in datum){
+            if(datum[idx] instanceof Buffer){
+                data += '<Buffer';
+                for(const value of datum[idx].values()){
+                    data += ' ' + value.toString(16);
+                }
+                data += '>';
+            }else if(typeof datum[idx] == 'object'){
+                data += JSON.stringify(datum[idx], null, ' ');
+            } else {
+                data += datum[idx];
+            }
+            if(idx < datum.length-1){
+                data +=' ';
+            }
+        }
+        console.log(data)
         this._logBuffer.push(data);
         if(this._client && this._client.alive && !this._client.pause){
             while(this._logBuffer.length){

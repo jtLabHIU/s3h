@@ -2,7 +2,7 @@
  * @file part of `child-process` and `sync-exec` and `fs` module wrapper class for non-english Windows
  *      jtShell.js
  * @module ./jtShell
- * @version 2.10.200302a
+ * @version 2.20.200327a
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2020 jtLab, Hokkaido Information University
@@ -18,13 +18,19 @@
  * @todo now spawn() doesn't through transCodepage()
  * @todo ya, transCodepage(), we should make as pipe.
  * 
+ * you can use option with syncExec() :
+ * decodePage: codepage which decoding 
+ * 
  */
+/** */
 
+const __DEBUG__ = false;
+
+const { logger } = require('./jtDebugConsole');
 const child_process = require('child_process');
 const sync_exec = require('sync-exec');
 const fs = require('fs');
 const iconv = require('iconv-lite');
-//const chcp = process.env.SystemRoot + '\\system32\\chcp';
 const chcp = 'chcp';
 
 /**
@@ -222,30 +228,33 @@ class jtShell{
      * @param {string} [encoding] - encode to
      * @returns {string}
      */
-    transCodepage(arg_source, arg_codepage = this._codepage, encoding = this._encoding){
+    transCodepage(arg_source, arg_codepage = null, encoding = this._encoding){
         let codepage = null;
         let source = null;
         if(typeof arg_source === 'object' && arg_source.hasOwnProperty('line')){
             codepage = this._parseCodepage(arg_source.line);
-            if(!codepage){
-                codepage = arg_codepage;
-            }
             source = arg_source.buffer;
         }else{
-            codepage = arg_codepage;
             source = arg_source;
+        }
+        if(arg_codepage){
+            codepage = arg_codepage;
+        }else if(!codepage){
+            codepage = this._codepage;
         }
         let cp = 'cp' + codepage;
         if(codepage == 65001 || codepage == 'utf8'){
             cp = 'utf8';
         }
         const buf = Buffer.from(source);
-    //    console.log('buf:', buf);
         const dec = iconv.decode(buf, cp);
-    //    console.log('dec:', dec, cp);
         const enc = iconv.encode(dec, encoding);
-    //    console.log('enc:', enc, encoding);
-    //    console.log('結果:', enc.toString());
+        if(__DEBUG__){
+            logger.log('buf:', buf);
+            logger.log('dec:', dec, cp);
+            logger.log('enc:', enc, encoding);
+            logger.log('結果:', enc.toString());
+        }
 
         return enc.toString();
     }
@@ -362,8 +371,13 @@ class jtShell{
         }else{
             result = sync_exec(command, timeout, this._mergeOptions(options));
         }
-        result.stdout = this.transCodepage(this._getLineFromBuffer(result.stdout));
-        result.stderr = this.transCodepage(result.stderr);
+        if(options.decodePage){
+            result.stdout = this.transCodepage(this._getLineFromBuffer(result.stdout), options.decodePage);
+            result.stderr = this.transCodepage(result.stderr, options.decodePage);
+        }else{
+            result.stdout = this.transCodepage(this._getLineFromBuffer(result.stdout));
+            result.stderr = this.transCodepage(result.stderr);
+        }
         return result;
     }
 

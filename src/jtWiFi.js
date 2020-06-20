@@ -25,6 +25,7 @@ const shell = require('./jtShell');
 const sleep = require('./jtDevice/jtSleep');
 const NetUtil = require('./jtNetUtil');
 const iconv = require('iconv-lite');
+const { logger } = require('./jtDebugConsole');
 const EventEmitter = require('events').EventEmitter;
 
 const scanner = '\\asset\\WlanScan.exe';
@@ -212,14 +213,14 @@ class jtWiFi{
             shell.cwd(shell.temp());
             return wifi.connectToAP(ap, (err, response) => {
                 if(err && err.stderr){
-                    console.log('connectToAP_Promise:',typeof err, err)
+                    logger.log('connectToAP_Promise:',typeof err, err)
                     if(err.stderr.indexOf('confirmation timed out')<0){
                         reject(err);
                         return;
                     }
                 }
                 shell.cwd(cwd);
-                console.log('writeback:', cwd);
+                logger.log('writeback:', cwd);
                 resolve(response);
             });
         });
@@ -232,7 +233,7 @@ class jtWiFi{
         return new Promise( (resolve, reject) => {
             return wifi.resetWiFi((err, response) => {
                 if(err && err.stderr){
-                    console.log('resetWiFi_Promise:',typeof err, err)
+                    logger.log('resetWiFi_Promise:',typeof err, err)
                     if(err.stderr.indexOf('confirmation timed out')<0){
                         reject(err);
                         return;
@@ -254,7 +255,7 @@ class jtWiFi{
             if(shell.isWin32()){
                 var response = shell.syncExec(this._appPath + scanner);
                 if(response.stderr){
-                    console.log('wifi.scan() error:', this._appPath + scanner, response.status, response.stderr);
+                    logger.log('wifi.scan() error:', this._appPath + scanner, response.status, response.stderr);
                 }
             }
             response = await this.scanForWiFi_Promise();
@@ -269,7 +270,7 @@ class jtWiFi{
             aplist.networks = [];
             aplist.msg = e;
             if(this._debug){
-                console.log(e);
+                logger.log(e);
             }
         }
         _aplist = aplist;
@@ -345,7 +346,7 @@ class jtWiFi{
                 }
             }
             if(this._debug){
-                console.log('refreshIfaceState: state change');
+                logger.log('refreshIfaceState: state change');
             }
         }
         return result;
@@ -398,17 +399,17 @@ class jtWiFi{
             }
             if(this.connectionState.connected){
                 if(this._debug){
-                    console.log('WiFi is already connected to', this.connectionState.network.ssid);
+                    logger.log('WiFi is already connected to', this.connectionState.network.ssid);
                 }
             }else{
                 try{
                     result = await this.connectToAP_Promise(ap);
-                    console.log('jtWifi:connect:result', result);
+                    logger.log('jtWifi:connect:result', result);
                     if(result.success){
                         this._ifaceState.network = network;
                         await arp.getTable();
                         this._ifaceState.network.ip = await arp.toIP(network.mac);
-                        console.log('debug: ', this._ifaceState.network.ip);
+                        logger.log('debug: ', this._ifaceState.network.ip);
                         // use default target IP when arp lookup from MAC address was failed
                         if(!this._ifaceState.network.ip){
                             if(new NetUtil().ping(target)){
@@ -422,7 +423,7 @@ class jtWiFi{
                         }
                         // start watchdog
                         if(result.success){
-                            console.log('jtWiFi:startWatchdog: success');
+                            logger.log('jtWiFi:startWatchdog: success');
                             this._ifaceState.network.host = new NetUtil(this._ifaceState.network.ip);
                             this._ifaceState.network.host.event.on('dead', () => {
                                 this.disconnect();
@@ -434,7 +435,7 @@ class jtWiFi{
                     }
                 }catch(e){
                     //if(this._debug){
-                        console.log('connect error:', e);
+                        logger.log('connect error:', e);
                     //}
                 }
             }
@@ -452,10 +453,10 @@ class jtWiFi{
             this.stop();
             result = await this.resetWiFi_Promise();
             this.refreshIfaceState();
-            console.log('WiFi disconnected.');
+            logger.log('WiFi disconnected.');
         }catch(e){
             if(this._debug){
-                console.log('disconnect error:', e);
+                logger.log('disconnect error:', e);
             }
         }
         return result;
@@ -495,6 +496,10 @@ class jtWiFi{
         }
         return result;
     }
+    
+    log(msg, ...msgs){
+        logger.log(msg, ...msgs);
+    }
 }
 
 /*
@@ -503,27 +508,27 @@ async function test(){
     jtwifi = new jtWiFi('path\\to\\app');
     let count;
     if(count = await jtwifi.init()){
-        console.log('ap:', count);
+        logger.log('ap:', count);
     }else{
-        console.log('WiFi down...');
+        logger.log('WiFi down...');
     }
 //    const network = await jtwifi.lookup('TELLO-D3F077');
     const network = await jtwifi.lookup('TELLO-D2D555');
     if(network){
         await jtwifi.disconnect();
-        console.log('connect:', await jtwifi.connect(network));
-        //console.log(jtwifi.connectionState.network);
+        logger.log('connect:', await jtwifi.connect(network));
+        //logger.log(jtwifi.connectionState.network);
         while(jtwifi.connectionState.connected){
-            console.log('running...');
+            logger.log('running...');
             await sleep(1000);
         }
         //await jtwifi.disconnect();
-//        console.log('fallback:', await jtwifi.connect());
-//        console.log(jtwifi.connectionState.network);
+//        logger.log('fallback:', await jtwifi.connect());
+//        logger.log(jtwifi.connectionState.network);
         jtwifi.stop();
     }else{
-        console.log(network);
-        console.log('Tello not found');
+        logger.log(network);
+        logger.log('Tello not found');
     }
 }
 

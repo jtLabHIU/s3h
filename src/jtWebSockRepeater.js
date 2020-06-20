@@ -19,6 +19,8 @@ const wifi = require('./jtWiFi');
 const sleep = require('./jtDevice/jtSleep');
 const { jtShell } = require('./jtShell');
 const { logger } = require('./jtDebugConsole');
+const { meshServer } = require('./jtMesh');
+const NetUtil = require('./jtNetUtil');
 
 /**
  * - WSRPacket:
@@ -623,10 +625,21 @@ class jtWebSockRepeater{
 
         if(command == 'terminate'){
             response = await this.disconnectFromMesh(response);
+            if(meshServer.isRunning){
+                await meshServer.stop();
+            }
+            /** @todo server? */
         }else if(command == 'start'){
-            response.result = false;
-            response.message = 'not implemented yet';
-            /**@todo: return IP Address of this host through response.message */
+            response.result = await meshServer.start();
+            await this.connectToMesh(response);
+            if(response.result){
+                const ip = new NetUtil();
+                console.log(ip.getIP());
+                console.log(ip);
+                response.message = new NetUtil().getIP().toString;
+            }else{
+                response.message = 'server already running';
+            }
         }else if(command == 'connect'){
             this.log('execMeshCommand: connect invoked');
             if(commands.length>1){
@@ -724,6 +737,7 @@ class jtWebSockRepeater{
     }
 
     async disconnectFromMesh(response){
+        console.log('mesh.disconnect', this._mesh.connected)
         if(this._mesh.connected){
             try{
                 await this._mesh.sock.end();
