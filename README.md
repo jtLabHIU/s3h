@@ -31,6 +31,8 @@ jtLab Scratch 3 Helper app
 - `npm install`
 - ~~add `chcp 437 & ` into before `netsh` of line 69 & 163 on `s3h/node_modules/wifi-control/lib/win32.js`~~
 - ~~modify 'name' and 'ssid' for your Tello ID in `async function startCommServ` on `s3h/src/startup.js`~~
+- modify `node_modules` which subscribe on files in `jts3h/src` folder
+- (`cd ../scratch-gui; npm start` to run on browser)
 - `npm run dist`
 - run `jtS3H-win32-x64\jtS3H.exe`
 
