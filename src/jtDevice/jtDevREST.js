@@ -2,7 +2,7 @@
  * @file jtDevice: RESTful HTTP Server
  *      jtDevREST.js
  * @module ./jtDevice/jtDevREST
- * @version 0.00.191124a
+ * @version 0.00.191126b
  * @author TANAHASHI, Jiro <jt@do-johodai.ac.jp>
  * @license MIT (see 'LICENSE' file)
  * @copyright (C) 2019 jtLab, Hokkaido Information University
@@ -36,8 +36,11 @@ class jtDevREST{
     async _httpServer(request, response){
         const requestUrl = url.parse(request.url, true);
         const endpoint = path.dirname(requestUrl.pathname);
-        const method = path.basename(requestUrl.pathname);
+        let method = path.basename(requestUrl.pathname);
 //        if( request.method == 'GET' && endpoint == HTTP_END_POINT){
+        if(method == 'target'){
+            method = 'magnetometerBearing';
+        }
         if(this._endPoints.hasOwnProperty(method)){
                 console.log('accept method:', method);
                 response.writeHead(200, 'OK', {

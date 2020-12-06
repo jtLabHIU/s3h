@@ -4,6 +4,12 @@ jtLab Scratch 3 Helper app
 - run in task tray
 - communicate with Scratch 3 through WebSocket
 
+branches:
+- Latest release branch: `dev191017`
+- Current development branch: `dev_3.0`
+
+for build the latest release branch, please checkout `jtScratch-desktop` branch on `scratch-gui` and `scratch-vm`
+
 # first step guide to build for Windows (with MSYS2)
 
 - `mkdir jtScratch` on NTFS filesystem >5GB
@@ -136,7 +142,6 @@ Received 26 bytes from 192.168.10.1:8889
 - todo 
 limit 1 hop
 scratch 1/2 helper compatible
-13:30~14:20 last 10 min
 
 - devSock
     - Tello can't reconnect to another UDP port, such make it by 0

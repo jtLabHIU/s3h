@@ -1,7 +1,11 @@
 # jtScratch
 
 jtLab Scratch 3.0 for use with jtS3Helper
-for develop the current release version, please checkout `jtScratch-desktop` branch on `scratch-gui` and `scratch-vm`
+
+- Latest release branch: `dev191017`
+- Current development branch: `dev_3.0`
+
+for build the latest release branch, please checkout `jtScratch-desktop` branch on `scratch-gui` and `scratch-vm`
 
 # How to install Scratch Desktop 3.0 from github
 
