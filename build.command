@@ -1,3 +1,4 @@
+export NODE_OPTIONS="--max-old-space-size=4096" # ageinst for `Javascript heap out of memory`
 cd ../scratch-vm
 npm install
 npm link
@@ -7,6 +8,7 @@ npm install
 npm link
 npm link scratch-vm
 cd ../scratch-desktop
+npm install
 npm link scratch-gui
 npm run dist        # WARNING: This command is failed when it is disconnected from the internet. 
 cd ../s3h

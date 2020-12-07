@@ -4,6 +4,7 @@ jtLab Scratch 3.0 for use with jtS3Helper
 
 - Latest release branch: `dev191017`
 - Current development branch: `dev_3.0`
+- Current upstream version: 3.18.1 (2020/12/06)
 
 for build the latest release branch, please checkout `jtScratch-desktop` branch on `scratch-gui` and `scratch-vm`
 
@@ -44,6 +45,8 @@ for Windows developer:
 - (fork from [scratch-desktop](https://github.com/LLK/scratch-desktop))
 - `git clone https://github.com/jtLabHIU/scratch-desktop.git`
 - `cd scratch-desktop`
+- `git remote add upstream https://github.com/LLK/scratch-desktop.git`
+- `git config branch.develop.remote upstream https://github.com/jtLabHIU/scratch-desktop.git`
 - `npm install`
 - `npm run fetch`
 - `npm link scratch-gui`
@@ -52,11 +55,32 @@ for Windows developer:
 - `npm run dist`to publich a distribution package into `dist` folder
 
 ## update to new version of original Scratch 3.0
-- git pull
-- git push origin
-- git checkout --track upstream/scratch-desktop
-- git pull
-- git push origin
+```
+cd ../scratch-vm
+git checkout develop
+git fetch upstream
+# (wait for the number of commits to be updated and sync it)
+git push origin develop
+git checkout jtScratch-desktop
+git merge upstream/develop
+# (fix conflicts and commit them all)
+
+cd ../scratch-gui
+git checkout develop
+git fetch upstream
+# (wait for the number of commits to be updated and sync it)
+git push origin develop
+git checkout jtScratch-desktop
+git merge upstream/develop
+# (fix conflicts and commit them all)
+
+cd ../scratch-desktop
+git fetch upstream
+# (wait for the number of commits to be updated and sync it)
+git merge upstream/develop
+# (fix conflicts and commit them all)
+git push origin develop
+```
 
 ## Where are translation files in?
 - scratch-*/node_modules/scratch-l10n/locales/

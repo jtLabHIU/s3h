@@ -7,17 +7,18 @@
  * @copyright (C) 2019-2020 jtLab, Hokkaido Information University
  */
 
-const mblock_mod = false;   // set `true` for mBlock
-
 const {app, BrowserWindow, Menu, Tray} = require('electron');
 const sleep = require('./jtDevice/jtSleep');
 
-if(mblock_mod){
-  const target = 'BBC micro:bit [zetit]';
-  const microbit = require('./jtDevice/jtDevBLE');
-}else{
-  const WSR = require('./jtWebSockRepeater');
-}
+//#ifdef(mblock_mod)
+//const mblock_mod = true;
+//const target = 'BBC micro:bit [zetit]';
+//const microbit = require('./jtDevice/jtDevBLE');
+//#else
+const mblock_mod = false;
+const WSR = require('./jtWebSockRepeater');
+//#endif
+
 const shell = require('./jtShell');
 let mainWindow = null;
 let tray = null;
@@ -103,7 +104,7 @@ if(!mblock_mod){
     if(path[path.length-1].replace(/\r?\n/g, '').trim() === 's3h'){
       pathAdd = 'jtS3H-win32-x64\\';
     }
-    shell.exec('".\\' + pathAdd + 'win-unpacked\\Scratch Desktop.exe"', (error) => {
+    shell.exec('".\\' + pathAdd + 'win-unpacked\\Scratch 3.exe"', (error) => {
       if(error){
         console.log(error);
       }

@@ -7,6 +7,7 @@ jtLab Scratch 3 Helper app
 branches:
 - Latest release branch: `dev191017`
 - Current development branch: `dev_3.0`
+- Current upstream version: 3.18.1 (2020/12/06)
 
 for build the latest release branch, please checkout `jtScratch-desktop` branch on `scratch-gui` and `scratch-vm`
 

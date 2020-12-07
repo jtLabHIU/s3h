@@ -22,8 +22,8 @@
   },
   "homepage": "https://github.com/jtLabHIU/s3h#readme",
   "devDependencies": {
-    "electron": "^7.1.7",
-    "electron-packager": "^14.0.6"
+    "electron": "^8.2.5",
+    "electron-packager": "^15.1.0"
   },
   "dependencies": {
     "@abandonware/noble": "^1.9.2-5",
