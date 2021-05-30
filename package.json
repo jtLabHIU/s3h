@@ -35,7 +35,7 @@
     "sync-exec": "^0.6.2",
     "uuid": "^3.3.3",
     "wifi-control": "^2.0.1",
-    "ws": "^7.1.2"
+    "ws": "^7.4.6"
   },
   "opencv4nodejs": {
     "autoBuildOpencvVersion": "4.1.1"
