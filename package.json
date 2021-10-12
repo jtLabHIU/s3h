@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/jtLabHIU/s3h#readme",
   "devDependencies": {
-    "electron": "^8.2.5",
+    "electron": "^11.5.0",
     "electron-packager": "^15.1.0"
   },
   "dependencies": {
