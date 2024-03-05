@@ -11,8 +11,10 @@ branches:
 
 for build the latest release branch, please checkout `jtScratch-desktop` branch on `scratch-gui` and `scratch-vm`
 
-# first step guide to build for Windows (with MSYS2)
+# first step guide to build for Windows (with Git for Windows SDK/MSYS2)
 
+- run `npm install --global windows-build-tools` from Administrator PowerShell
+- open `Git SDK 64-bit`
 - `mkdir jtScratch` on NTFS filesystem >5GB
 - `cd jtScratch`
 - `git clone https://github.com/jtLabHIU/scratch-vm.git`
@@ -31,11 +33,12 @@ for build the latest release branch, please checkout `jtScratch-desktop` branch 
 - `cd scratch-desktop`
 - `npm install`
 - `npm link scratch-gui`
-- `npm run dist`
+- `npm run dist` 　Even if you get a FATAL ERROR, it's okay as long as `npm start` works.
 - `cd ..`
 - `git clone https://github.com/jtLabHIU/s3h.git`
 - `cd s3h`
-- `npm install`
+- `git checkout dev191017` or latest release branch
+- `npm install`   If you get build errors, install the latest LTS version of Node.js.
 - add `chcp 437 & ` into before `netsh` of line 69 & 163 on `s3h/node_modules/wifi-control/lib/win32.js`
 - modify 'name' and 'ssid' for your Tello ID in `async function startCommServ` on `s3h/src/startup.js`
 - `npm run dist`
